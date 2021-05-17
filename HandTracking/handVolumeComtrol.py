@@ -32,7 +32,7 @@ maxVol = volRange[1]
 vol = 0
 volBar = 400
 volPar = 0
-
+volumeChange = False
 
 # 本動作
 while True:
@@ -48,12 +48,13 @@ while True:
     if len(lmlist) != 0:
         # print(lmlist)
         # 指の根元の座標listxを取得
-        xMCP, yMCP = [], []
+        Xmax, Ymax = 0, 0
+        Xmin, Ymin = 10e8, 10e8
         for id, lm in enumerate(lmlist):
+            Xmax, Ymax = max(Xmax, lm[1]), max(Ymax, lm[2])
+            Xmin, Ymin = min(Xmin, lm[1]), min(Ymin, lm[2])
             if 5 <= id <= 17 and id % 4 == 1:
                 cv2.circle(img2, (lm[1], lm[2]), 1, (0, 255, 0), cv2.FILLED)
-                xMCP.append(lm[1])
-                yMCP.append(lm[2])
             else:
                 cv2.circle(img2, (lm[1], lm[2]), 1, (255, 0, 0), cv2.FILLED)
 
@@ -62,19 +63,8 @@ while True:
         x4, y4 = lmlist[4][1], lmlist[4][2]
         x8, y8 = lmlist[8][1], lmlist[8][2]
         cx, cy = (x4 + x8) // 2, (y4 + y8) // 2
-        xMAX, yMAX = max(xMCP), max(yMCP)
-        xMIN, yMIN = min(xMCP), min(yMCP)
 
-        # cv2.rectangle(img2,(xMIN,yMIN),(xMAX,yMAX))
-
-        # TODO:指の根元の直線を引きたい(最小二乗法?)
-        p = polyfit(xMCP, yMCP, 1)
-        # cv2.circle(
-        #     img2, (xMIN, int(p[0] * xMIN + p[1])), 2, (0, 0, 255), cv2.FILLED)
-        # cv2.circle(
-        #     img2, (xMAX, int(p[0] * xMAX + p[1])), 2, (0, 0, 255), cv2.FILLED)
-        cv2.line(img2, (xMIN, int(p[0] * xMIN + p[1])),
-                 (xMAX, int(p[0] * xMAX + p[1])), (0, 0, 255), 3)
+        cv2.rectangle(img2, (Xmin, Ymin), (Xmax, Ymax), 2)
 
         cv2.circle(img, (x4, y4), 5, (255, 0, 255), cv2.FILLED)
         cv2.circle(img, (x8, y8), 5, (255, 0, 255), cv2.FILLED)
@@ -87,21 +77,22 @@ while True:
 
         # hand range 50-300
         # volume range -65-0
-
-        vol = np.interp(length, [50, 300], [minVol, maxVol])
-        volBar = np.interp(length, [50, 300], [400, 150])
-        volPar = np.interp(length, [50, 300], [0, 100])
-        # print(int(length), vol)
-        volume.SetMasterVolumeLevel(vol, None)
+        if volumeChange:
+            vol = np.interp(length, [50, 300], [minVol, maxVol])
+            volBar = np.interp(length, [50, 300], [400, 150])
+            volPar = np.interp(length, [50, 300], [0, 100])
+            # print(int(length), vol)
+            volume.SetMasterVolumeLevel(vol, None)
 
         cv2.rectangle(img, (50, 150), (85, 400), (0, 255, 0), 3)
         cv2.rectangle(img, (50, int(volBar)), (85, 400),
                       (0, 255, 0), cv2.FILLED)
         # if 指をおろしている判定 指の根元の直線から判別できる？
-        if lmlist[8][2] < p[0]*lmlist[8][1]+p[1] and lmlist[0][2] < p[0]*lmlist[0][1]+p[1]:
-            cv2.circle(
-                img2, (lmlist[8][1], lmlist[8][2]), 2, (0, 255, 255), cv2.FILLED)
-            # TODO:音量を確定する
+        if lmlist[8][2] < lmlist[6][2] and lmlist[0][2] < lmlist[6][2]:
+            cv2.putText(img2, "人差し指曲げた", (20, 30),
+                        cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 0), 3)
+
+        # TODO:音量を確定する
 
     # FPS表示設定
     cTime = time.time()
