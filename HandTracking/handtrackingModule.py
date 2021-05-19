@@ -3,10 +3,12 @@ import mediapipe as mp
 import time
 import sys
 
+from numpy import longcomplex
+
 
 class handDetectior():
     def __init__(self, mode=False, MaxHands=2, detectonCon=0.5, trackCon=0.5):
-        #class内変数selfに諸値を代入してclass上で使えるようにしておく
+        # class内変数selfに諸値を代入してclass上で使えるようにしておく
         self.mode = mode
         self.maxHands = MaxHands
         self.detectionCon = detectonCon
@@ -28,7 +30,7 @@ class handDetectior():
         return img
 
     def findPosition(self, img, handNo=0, draw=True):
-        lmlist = []
+        self.lmlist = []
         if self.results.multi_hand_landmarks:
             myhand = self.results.multi_hand_landmarks[handNo]
             for id, lm in enumerate(myhand.landmark):
@@ -36,13 +38,26 @@ class handDetectior():
                 h, w, c = img.shape
                 cx, cy = int(lm.x*w), int(lm.y*h)
                 # print(id, cx, cy)
-                lmlist.append([id, cx, cy])
+                self.lmlist.append([id, cx, cy])
                 # if id ==0:
                 if draw:
                     cv2.circle(img, (cx, cy), 5, (255, 0, 255), cv2.FILLED)
                     cv2.putText(img, str(id), (cx, cy),
                                 cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 0), 1)
-        return lmlist
+        return self.lmlist
+
+    def checkFinger(self, img, ALLHANDS=True):
+        lmlist = self.lmlist
+        ans = [0]*5
+        for id in range(1, 6):
+            L1 = ((lmlist[id*4][1]-lmlist[0][1])**2 +
+                  (lmlist[id*4][2]-lmlist[0][2])**2)**0.5
+            L2 = ((lmlist[id*4-2][1]-lmlist[0][1])**2 +
+                  (lmlist[id*4-2][2]-lmlist[0][2])**2)**0.5
+            if L1 > L2:
+                ans[id-1] = 1
+
+        return ans
 
 
 def main():
@@ -59,10 +74,10 @@ def main():
         success, img = cap.read()
         # print(success)
         img = detector.findHands(img)
-        #手の情報リストlmlistを取得
+        # 手の情報リストlmlistを取得
         lmlist = detector.findPosition(img)
         if len(lmlist) != 0:
-            print(lmlist[4])#lmlistを表示
+            print(lmlist[4])  # lmlistを表示
         # FPSを表示
         cTime = time.time()
         fps = 1/(cTime-pTime)

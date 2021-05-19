@@ -1,3 +1,4 @@
+from typing import runtime_checkable
 import cv2
 import time
 import numpy as np
@@ -6,6 +7,7 @@ import sys
 from ctypes import cast, POINTER
 from comtypes import CLSCTX_ALL
 from numpy.lib.polynomial import polyfit
+from numpy.lib.twodim_base import triu_indices_from
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 import handtrackingModule as htm
 
@@ -32,7 +34,13 @@ maxVol = volRange[1]
 vol = 0
 volBar = 400
 volPar = 0
-volumeChange = False
+volumeFlag = False
+volumeCounter = 0
+
+
+def Lengths(x1, y1, x2, y2):
+    return (x1-x2)**2+(y1-y2)**2
+
 
 # 本動作
 while True:
@@ -58,26 +66,40 @@ while True:
             else:
                 cv2.circle(img2, (lm[1], lm[2]), 1, (255, 0, 0), cv2.FILLED)
 
-        # 4:親指の先端の座標を取得
-        # 8:人差し指の先端の座標を取得
-        x4, y4 = lmlist[4][1], lmlist[4][2]
-        x8, y8 = lmlist[8][1], lmlist[8][2]
-        cx, cy = (x4 + x8) // 2, (y4 + y8) // 2
-
         cv2.rectangle(img2, (Xmin, Ymin), (Xmax, Ymax), 2)
 
-        cv2.circle(img, (x4, y4), 5, (255, 0, 255), cv2.FILLED)
-        cv2.circle(img, (x8, y8), 5, (255, 0, 255), cv2.FILLED)
-        cv2.line(img, (x4, y4), (x8, y8), (255, 10, 255), 3)
+        # 指をおろしている判定を取得
+        checkedList = detector.checkFinger(lmlist)
+        print(checkedList)
 
-        length = math.sqrt((x4-x8)**2 + (y4-y8)**2)
-        # print(length)
-        if length > 50:
-            cv2.circle(img, (cx, cy), 5, (255, 0, 255), cv2.FILLED)
+        # 親指と人差し指を上げるとボリューム操作がON
+        if volumeFlag is False and checkedList[1] and checkedList[0] and checkedList[2] == 0 and checkedList[3] == 0 and checkedList[4] == 0:
+            volumeFlag = True
+            volumeCounter = 0
 
-        # hand range 50-300
+        # 小指だけを上げているとボリューム操作がOFF
+        if volumeFlag and  checkedList[0] and checkedList[1] and checkedList[2] == 0 and checkedList[3] == 0 and checkedList[4]:
+            volumeFlag = False
+            volumeCounter = 0
+
+        # 手の長さの範囲 50-300
         # volume range -65-0
-        if volumeChange:
+        if volumeFlag:
+            # x4 y4: 親指の先端の座標を取得
+            # x8 y8: 人差し指の先端の座標を取得
+            # cx cy: 親指と人差指の先端の中点
+            # length:親指と人差指の先端の長さ
+            x4, y4 = lmlist[4][1], lmlist[4][2]
+            x8, y8 = lmlist[8][1], lmlist[8][2]
+            cx, cy = (x4 + x8) // 2, (y4 + y8) // 2
+            cv2.circle(img, (x4, y4), 5, (255, 0, 255), cv2.FILLED)
+            cv2.circle(img, (x8, y8), 5, (255, 0, 255), cv2.FILLED)
+            cv2.line(img, (x4, y4), (x8, y8), (255, 10, 255), 3)
+            length = math.sqrt((x4 - x8) ** 2 + (y4 - y8) ** 2)
+            # print(length)
+            if length > 50:
+                cv2.circle(img, (cx, cy), 5, (255, 0, 255), cv2.FILLED)
+
             vol = np.interp(length, [50, 300], [minVol, maxVol])
             volBar = np.interp(length, [50, 300], [400, 150])
             volPar = np.interp(length, [50, 300], [0, 100])
@@ -87,20 +109,28 @@ while True:
         cv2.rectangle(img, (50, 150), (85, 400), (0, 255, 0), 3)
         cv2.rectangle(img, (50, int(volBar)), (85, 400),
                       (0, 255, 0), cv2.FILLED)
-        # if 指をおろしている判定 指の根元の直線から判別できる？
-        if lmlist[8][2] < lmlist[6][2] and lmlist[0][2] < lmlist[6][2]:
-            cv2.putText(img2, "人差し指曲げた", (20, 30),
-                        cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 0), 3)
 
-        # TODO:音量を確定する
+    # UI設定
+    if volumeCounter < 60 and volumeFlag:
+        volumeCounter += 1
+        cv2.putText(img2, "changed >> Volume ON", (20, 20),
+                    cv2.FONT_HERSHEY_COMPLEX, 1, (155, 155, 155), 1)
+
+    if volumeCounter < 60 and volumeFlag is False:
+        volumeCounter += 1
+        cv2.putText(img2, "changed >> Volume OFF", (20, 20),
+                    cv2.FONT_HERSHEY_COMPLEX, 1, (155, 155, 155), 1)
+
+    cv2.putText(img, f'{int(volPar)} %', (40, 450),
+                cv2.FONT_HERSHEY_COMPLEX, 1, (255, 0, 0), 3)
+
+    # TODO:音量を確定する
 
     # FPS表示設定
     cTime = time.time()
     fps = 1/(cTime-pTime)
     pTime = cTime
     cv2.putText(img, f'FPS: {int(fps)}', (40, 50),
-                cv2.FONT_HERSHEY_COMPLEX, 1, (255, 0, 0), 3)
-    cv2.putText(img, f'{int(volPar)} %', (40, 450),
                 cv2.FONT_HERSHEY_COMPLEX, 1, (255, 0, 0), 3)
 
     # 画像の表示
