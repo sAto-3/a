@@ -3,8 +3,6 @@ import mediapipe as mp
 import time
 import sys
 
-from numpy import longcomplex
-
 
 class handDetectior():
     def __init__(self, mode=False, MaxHands=2, detectonCon=0.5, trackCon=0.5):
@@ -50,10 +48,10 @@ class handDetectior():
         lmlist = self.lmlist
         ans = [0]*5
         for id in range(1, 6):
-            L1 = ((lmlist[id*4][1]-lmlist[0][1])**2 +
-                  (lmlist[id*4][2]-lmlist[0][2])**2)**0.5
-            L2 = ((lmlist[id*4-2][1]-lmlist[0][1])**2 +
-                  (lmlist[id*4-2][2]-lmlist[0][2])**2)**0.5
+            L1 = ((lmlist[id * 4][1] - lmlist[0][1]) ** 2 +
+                  (lmlist[id * 4][2] - lmlist[0][2]) ** 2) ** 0.5
+            L2 = ((lmlist[id * 4 - 2][1] - lmlist[0][1]) ** 2 +
+                  (lmlist[id * 4 - 2][2] - lmlist[0][2]) ** 2) ** 0.5
             if L1 > L2:
                 ans[id-1] = 1
 

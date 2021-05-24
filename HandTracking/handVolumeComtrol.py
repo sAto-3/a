@@ -1,4 +1,4 @@
-from typing import runtime_checkable
+from typing import Counter, runtime_checkable
 import cv2
 import time
 import numpy as np
@@ -9,10 +9,16 @@ from comtypes import CLSCTX_ALL
 from numpy.lib.polynomial import polyfit
 from numpy.lib.twodim_base import triu_indices_from
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+import pyautogui
 import handtrackingModule as htm
 
+# 基本設定
 # ウィンドウの大きさの設定
 wCam, hCam = 640, 480
+
+display_size = pyautogui.size()
+(wWin, hWin) = pyautogui.size()
+print(display_size)
 
 # 動画関係設定
 cap = cv2.VideoCapture(0)
@@ -36,11 +42,12 @@ volBar = 400
 volPar = 0
 volumeFlag = False
 volumeCounter = 0
-
-
-def Lengths(x1, y1, x2, y2):
-    return (x1-x2)**2+(y1-y2)**2
-
+mouseFlag = False
+mouseCounter = 0
+allOffCounter = 0
+x8, y8 = 0, 0
+frame = 0
+f = 0
 
 # 本動作
 while True:
@@ -52,6 +59,7 @@ while True:
     img = detector.findHands(img)
     # detectorの手listを取得する
     lmlist = detector.findPosition(img, draw=False)
+
     # if 手が認識した
     if len(lmlist) != 0:
         # print(lmlist)
@@ -73,17 +81,37 @@ while True:
         print(checkedList)
 
         # 親指と人差し指を上げるとボリューム操作がON
-        if volumeFlag is False and checkedList[1] and checkedList[0] and checkedList[2] == 0 and checkedList[3] == 0 and checkedList[4] == 0:
+        if volumeFlag is False and checkedList == [1, 1, 0, 0, 1]:
             volumeFlag = True
+            mouseFlag = False
             volumeCounter = 0
 
-        # 小指だけを上げているとボリューム操作がOFF
-        if volumeFlag and  checkedList[0] and checkedList[1] and checkedList[2] == 0 and checkedList[3] == 0 and checkedList[4]:
+        # # 人差し指を上げるとマウス動作を開始
+        # if volumeFlag is False and checkedList == [1, 0, 0, 0, 0]:
+        #     mouseFlag = True
+        #     volumeFlag = False
+        #     mouseCounter = 0
+
+        # クリック動作
+        if mouseFlag and checkedList == [0, 1, 1, 0, 0]:
+            dl = ((lmlist[8][1]-lmlist[12][1])**2 +
+                  (lmlist[8][2]-lmlist[12][2])**2)**0.5
+            # print(dl)
+            if dl > 50 and mouseCounter == 60:
+                cv2.putText(img2, "CLICK", (20, 20),
+                            cv2.FONT_HERSHEY_COMPLEX, 1, (155, 155, 155), 1)
+                pyautogui.click()
+
+        # 小指だけを上げているとボリューム操作がOFF マウス動作もOFF
+        # TODO:音量を確定する
+        if (volumeFlag or mouseFlag) and checkedList == [0, 0, 0, 0, 1]:
             volumeFlag = False
-            volumeCounter = 0
+            mouseFlag = False
+            allOffCounter = 0
 
         # 手の長さの範囲 50-300
         # volume range -65-0
+        # 音量調節Flag
         if volumeFlag:
             # x4 y4: 親指の先端の座標を取得
             # x8 y8: 人差し指の先端の座標を取得
@@ -97,34 +125,46 @@ while True:
             cv2.line(img, (x4, y4), (x8, y8), (255, 10, 255), 3)
             length = math.sqrt((x4 - x8) ** 2 + (y4 - y8) ** 2)
             # print(length)
-            if length > 50:
+            if length > 50:  # 長さが50以上
                 cv2.circle(img, (cx, cy), 5, (255, 0, 255), cv2.FILLED)
 
+            # 音量調整
             vol = np.interp(length, [50, 300], [minVol, maxVol])
             volBar = np.interp(length, [50, 300], [400, 150])
             volPar = np.interp(length, [50, 300], [0, 100])
             # print(int(length), vol)
             volume.SetMasterVolumeLevel(vol, None)
+        # マウス操作Flag
+        if mouseFlag:
+            # 人差し指の座標を取り出してウィンドウの大きさに合わせる
+            x, y = int(lmlist[8][1]/wCam*wWin), int(lmlist[8][2]/hCam*hWin)
+            cv2.circle(img2, (lmlist[8][1], lmlist[8][2]),
+                       10, (255, 0, 0), cv2.FILLED)
+            # 移動
+            pyautogui.moveTo(x, y)
 
         cv2.rectangle(img, (50, 150), (85, 400), (0, 255, 0), 3)
         cv2.rectangle(img, (50, int(volBar)), (85, 400),
                       (0, 255, 0), cv2.FILLED)
 
-    # UI設定
+    # UI関係
     if volumeCounter < 60 and volumeFlag:
         volumeCounter += 1
         cv2.putText(img2, "changed >> Volume ON", (20, 20),
                     cv2.FONT_HERSHEY_COMPLEX, 1, (155, 155, 155), 1)
 
-    if volumeCounter < 60 and volumeFlag is False:
-        volumeCounter += 1
-        cv2.putText(img2, "changed >> Volume OFF", (20, 20),
+    if mouseCounter < 60 and mouseFlag:
+        mouseCounter += 1
+        cv2.putText(img2, "changed >> Mouse ON", (20, 20),
+                    cv2.FONT_HERSHEY_COMPLEX, 1, (155, 155, 155), 1)
+
+    if allOffCounter < 60 and (mouseFlag is False or volumeFlag is False):
+        allOffCounter += 1
+        cv2.putText(img2, "changed >> ALL OFF", (20, 20),
                     cv2.FONT_HERSHEY_COMPLEX, 1, (155, 155, 155), 1)
 
     cv2.putText(img, f'{int(volPar)} %', (40, 450),
                 cv2.FONT_HERSHEY_COMPLEX, 1, (255, 0, 0), 3)
-
-    # TODO:音量を確定する
 
     # FPS表示設定
     cTime = time.time()
@@ -142,3 +182,5 @@ while True:
     # 入力がEscの場合閉じる
     if k == 27:
         sys.exit()
+
+    frame += 1
