@@ -15,6 +15,8 @@ import handtrackingModule as htm
 # 基本設定
 # ウィンドウの大きさの設定
 wCam, hCam = 640, 480
+frameR = 100
+# smoothening = 10
 
 display_size = pyautogui.size()
 (wWin, hWin) = pyautogui.size()
@@ -25,7 +27,9 @@ cap = cv2.VideoCapture(0)
 cap.set(3, wCam)
 cap.set(4, hCam)
 pTime = 0
-detector = htm.handDetectior(detectonCon=0.7)
+plocX, plocY = 0, 0
+clocX, clocY = 0, 0
+detector = htm.handDetectior(MaxHands=1, detectonCon=0.7)
 
 # 音量関係設定
 devices = AudioUtilities.GetSpeakers()
@@ -48,7 +52,7 @@ allOffCounter = 0
 x8, y8 = 0, 0
 frame = 0
 f = 0
-
+print("ポインタの位置")
 # 本動作
 while True:
     # 画像の読み込み
@@ -56,29 +60,28 @@ while True:
     img2 = np.full((hCam, wCam, 3), 255, dtype=np.uint8)
 
     # 手を認識させる
-    img = detector.findHands(img)
+    img = detector.findHands(img, draw=False)
     # detectorの手listを取得する
-    lmlist = detector.findPosition(img, draw=False)
+    lmlist, bbox = detector.findPosition(img, draw=False)
 
     # if 手が認識した
     if len(lmlist) != 0:
         # print(lmlist)
         # 指の根元の座標listxを取得
-        Xmax, Ymax = 0, 0
-        Xmin, Ymin = 10e8, 10e8
+        Xmax, Ymax = bbox[2], bbox[3]
+        Xmin, Ymin = bbox[0], bbox[1]
         for id, lm in enumerate(lmlist):
-            Xmax, Ymax = max(Xmax, lm[1]), max(Ymax, lm[2])
-            Xmin, Ymin = min(Xmin, lm[1]), min(Ymin, lm[2])
             if 5 <= id <= 17 and id % 4 == 1:
                 cv2.circle(img2, (lm[1], lm[2]), 1, (0, 255, 0), cv2.FILLED)
             else:
                 cv2.circle(img2, (lm[1], lm[2]), 1, (255, 0, 0), cv2.FILLED)
 
         cv2.rectangle(img2, (Xmin, Ymin), (Xmax, Ymax), 2)
-
+        cv2.rectangle(img, (frameR, frameR),
+                      (wCam-frameR, hCam-frameR), (255, 0, 255), 2)
         # 指をおろしている判定を取得
-        checkedList = detector.checkFinger(lmlist)
-        print(checkedList)
+        checkedList = detector.checkFinger()
+        # print(checkedList)
 
         # 親指と人差し指を上げるとボリューム操作がON
         if volumeFlag is False and checkedList == [1, 1, 0, 0, 1]:
@@ -86,11 +89,11 @@ while True:
             mouseFlag = False
             volumeCounter = 0
 
-        # # 人差し指を上げるとマウス動作を開始
-        # if volumeFlag is False and checkedList == [1, 0, 0, 0, 0]:
-        #     mouseFlag = True
-        #     volumeFlag = False
-        #     mouseCounter = 0
+        # 人差し指を上げるとマウス動作を開始
+        if volumeFlag is False and checkedList == [0, 1, 0, 0, 0]:
+            mouseFlag = True
+            volumeFlag = False
+            mouseCounter = 0
 
         # クリック動作
         if mouseFlag and checkedList == [0, 1, 1, 0, 0]:
@@ -111,6 +114,7 @@ while True:
 
         # 手の長さの範囲 50-300
         # volume range -65-0
+
         # 音量調節Flag
         if volumeFlag:
             # x4 y4: 親指の先端の座標を取得
@@ -134,14 +138,23 @@ while True:
             volPar = np.interp(length, [50, 300], [0, 100])
             # print(int(length), vol)
             volume.SetMasterVolumeLevel(vol, None)
+
         # マウス操作Flag
         if mouseFlag:
             # 人差し指の座標を取り出してウィンドウの大きさに合わせる
-            x, y = int(lmlist[8][1]/wCam*wWin), int(lmlist[8][2]/hCam*hWin)
+            # x8, y8 = lmlist[8][1], lmlist[8][2]
+            # x = np.interp(x8, (frameR, wCam-frameR), (0, wWin))
+            # y = np.interp(y8, (frameR, hCam-frameR), (0, hWin))
+            # clocX = plocX+(x-plocX)/smoothening
+            # clocY = plocY+(y-plocY)/smoothening
+            x, y = lmlist[8][1]-frameR, lmlist[8][2]-frameR
+            x, y = int(x/(wCam-(frameR*2))*wWin), int(y/(hCam-(frameR*2))*hWin)
             cv2.circle(img2, (lmlist[8][1], lmlist[8][2]),
                        10, (255, 0, 0), cv2.FILLED)
             # 移動
-            pyautogui.moveTo(x, y)
+            print("\rX: "+str(x)+" Y: "+str(y), end="")
+
+            # pyautogui.moveTo(x, y)
 
         cv2.rectangle(img, (50, 150), (85, 400), (0, 255, 0), 3)
         cv2.rectangle(img, (50, int(volBar)), (85, 400),
