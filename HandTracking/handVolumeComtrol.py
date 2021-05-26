@@ -1,4 +1,3 @@
-from typing import Counter, runtime_checkable
 import cv2
 import time
 import numpy as np
@@ -6,7 +5,6 @@ import math
 import sys
 from ctypes import cast, POINTER
 from comtypes import CLSCTX_ALL
-from numpy.lib.polynomial import polyfit
 from numpy.lib.twodim_base import triu_indices_from
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 import pyautogui
@@ -46,6 +44,7 @@ volBar = 400
 volPar = 0
 volumeFlag = False
 volumeCounter = 0
+volumeConfirmFrag = False
 mouseFlag = False
 mouseCounter = 0
 allOffCounter = 0
@@ -84,10 +83,16 @@ while True:
         # print(checkedList)
 
         # 親指と人差し指を上げるとボリューム操作がON
-        if volumeFlag is False and checkedList == [1, 1, 0, 0, 1]:
+        if (volumeFlag and mouseFlag) is False and checkedList == [1, 1, 0, 0, 0]:
             volumeFlag = True
             mouseFlag = False
             volumeCounter = 0
+            volumeConfirmFrag = False
+
+        # ボリューム操作がONのとき、親指と人差し指、小指を上げるとボリュームが確定する
+        if volumeFlag and checkedList == [1, 1, 0, 0, 1]:
+            volumeConfirmFrag = True
+            volumeFlag = False
 
         # 人差し指を上げるとマウス動作を開始
         if volumeFlag is False and checkedList == [0, 1, 0, 0, 0]:
@@ -99,7 +104,7 @@ while True:
         if mouseFlag and checkedList == [0, 1, 1, 0, 0]:
             dl = ((lmlist[8][1]-lmlist[12][1])**2 +
                   (lmlist[8][2]-lmlist[12][2])**2)**0.5
-            # print(dl)
+            print('\r'+str(dl))
             if dl > 50 and mouseCounter == 60:
                 cv2.putText(img2, "CLICK", (20, 20),
                             cv2.FONT_HERSHEY_COMPLEX, 1, (155, 155, 155), 1)
@@ -131,13 +136,13 @@ while True:
             # print(length)
             if length > 50:  # 長さが50以上
                 cv2.circle(img, (cx, cy), 5, (255, 0, 255), cv2.FILLED)
-
-            # 音量調整
-            vol = np.interp(length, [50, 300], [minVol, maxVol])
-            volBar = np.interp(length, [50, 300], [400, 150])
-            volPar = np.interp(length, [50, 300], [0, 100])
-            # print(int(length), vol)
-            volume.SetMasterVolumeLevel(vol, None)
+            if volumeConfirmFrag is False:
+                # 音量調整
+                vol = np.interp(length, [50, 300], [minVol, maxVol])
+                volBar = np.interp(length, [50, 300], [400, 150])
+                volPar = np.interp(length, [50, 300], [0, 100])
+                # print(int(length), vol)
+                volume.SetMasterVolumeLevel(vol, None)
 
         # マウス操作Flag
         if mouseFlag:
@@ -152,9 +157,9 @@ while True:
             cv2.circle(img2, (lmlist[8][1], lmlist[8][2]),
                        10, (255, 0, 0), cv2.FILLED)
             # 移動
-            print("\rX: "+str(x)+" Y: "+str(y), end="")
+            # print("\rX: "+str(x)+" Y: "+str(y), end="")
 
-            # pyautogui.moveTo(x, y)
+            pyautogui.moveTo(x, y)
 
         cv2.rectangle(img, (50, 150), (85, 400), (0, 255, 0), 3)
         cv2.rectangle(img, (50, int(volBar)), (85, 400),

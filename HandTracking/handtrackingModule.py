@@ -66,6 +66,7 @@ class handDetectior():
         return ans
 
 
+
 def main():
     pTime = 0
     cTime = 0
