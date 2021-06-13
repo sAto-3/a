@@ -57,7 +57,7 @@ while True:
     # 画像の読み込み
     success, img = cap.read()
     img2 = np.full((hCam, wCam, 3), 255, dtype=np.uint8)
-
+    img=cv2.frip(img,1)
     # 手を認識させる
     img = detector.findHands(img, draw=False)
     # detectorの手listを取得する
