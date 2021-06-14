@@ -5,25 +5,25 @@ import math
 import sys
 from ctypes import cast, POINTER
 from comtypes import CLSCTX_ALL
-from numpy.lib.twodim_base import triu_indices_from
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 import pyautogui
 import handtrackingModule as htm
 
 # 基本設定
 # ウィンドウの大きさの設定
-wCam, hCam = 640, 480
+wCam, hCam = 1280, 720
 frameR = 100
-# smoothening = 10
 
-display_size = pyautogui.size()
+
+# ディスプレイの大きさの測定
 (wWin, hWin) = pyautogui.size()
-print(display_size)
+print("横：{0} 縦：{1}".format(wWin, hWin))
 
 # 動画関係設定
 cap = cv2.VideoCapture(0)
 cap.set(3, wCam)
 cap.set(4, hCam)
+cap.set(cv2.CAP_PROP_FPS, 60)
 pTime = 0
 plocX, plocY = 0, 0
 clocX, clocY = 0, 0
@@ -59,31 +59,26 @@ while True:
     img2 = np.full((hCam, wCam, 3), 255, dtype=np.uint8)
 
     # 手を認識させる
-    img = detector.findHands(img, draw=False)
+    img = detector.findHands(img, drawLandmark=False)
     # detectorの手listを取得する
-    lmlist, bbox = detector.findPosition(img, draw=False)
+    lmlist, bbox = detector.findPosition(img)
 
     # if 手が認識した
     if len(lmlist) != 0:
         # print(lmlist)
+
         # 指の根元の座標listxを取得
         Xmax, Ymax = bbox[2], bbox[3]
         Xmin, Ymin = bbox[0], bbox[1]
-        for id, lm in enumerate(lmlist):
-            if 5 <= id <= 17 and id % 4 == 1:
-                cv2.circle(img2, (lm[1], lm[2]), 1, (0, 255, 0), cv2.FILLED)
-            else:
-                cv2.circle(img2, (lm[1], lm[2]), 1, (255, 0, 0), cv2.FILLED)
 
         cv2.rectangle(img2, (Xmin, Ymin), (Xmax, Ymax), 2)
-        cv2.rectangle(img, (frameR, frameR),
-                      (wCam-frameR, hCam-frameR), (255, 0, 255), 2)
+
         # 指をおろしている判定を取得
         checkedList = detector.checkFinger()
         # print(checkedList)
 
         # 親指と人差し指を上げるとボリューム操作がON
-        if (volumeFlag and mouseFlag) is False and checkedList == [1, 1, 0, 0, 0]:
+        if (volumeFlag or mouseFlag) is False and checkedList == [1, 1, 0, 0, 0]:
             volumeFlag = True
             mouseFlag = False
             volumeCounter = 0
@@ -146,20 +141,21 @@ while True:
 
         # マウス操作Flag
         if mouseFlag:
-            # 人差し指の座標を取り出してウィンドウの大きさに合わせる
-            # x8, y8 = lmlist[8][1], lmlist[8][2]
-            # x = np.interp(x8, (frameR, wCam-frameR), (0, wWin))
-            # y = np.interp(y8, (frameR, hCam-frameR), (0, hWin))
-            # clocX = plocX+(x-plocX)/smoothening
-            # clocY = plocY+(y-plocY)/smoothening
+            # frameR[100] dot分の余裕をもたせてマウス操作ウィンドウを表示
+            cv2.rectangle(img, (frameR, frameR),
+                          (wCam-frameR, hCam-frameR), (255, 0, 255), 2)
+            cv2.rectangle(img2, (frameR, frameR),
+                          (wCam-frameR, hCam-frameR), (255, 0, 255), 2)
+            # 座標計算
             x, y = lmlist[8][1]-frameR, lmlist[8][2]-frameR
             x, y = int(x/(wCam-(frameR*2))*wWin), int(y/(hCam-(frameR*2))*hWin)
             cv2.circle(img2, (lmlist[8][1], lmlist[8][2]),
                        10, (255, 0, 0), cv2.FILLED)
             # 移動
             # print("\rX: "+str(x)+" Y: "+str(y), end="")
-
-            pyautogui.moveTo(x, y)
+            # 画面内なら動かして　それ以外なら動かさない
+            if 0 <= x < wWin and 0 <= y < hWin:
+                pyautogui.moveTo(x, y)
 
         cv2.rectangle(img, (50, 150), (85, 400), (0, 255, 0), 3)
         cv2.rectangle(img, (50, int(volBar)), (85, 400),
