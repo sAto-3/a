@@ -129,7 +129,7 @@ class handDetectior():
             rads = [0]*5
             # 第３関節は手の付け根との角度
             for id in range(1, 20, 4):
-                print(lmlist[hand][0][1:4])
+                # print(lmlist[hand][0][1:4])
                 rads[(id-1)//4] += module.threepoint_angle(
                     lmlist[hand][0][1:4], lmlist[hand][id][1:4], lmlist[hand][id+1][1:4])
             # 第１・２関節は前後の関節との角度

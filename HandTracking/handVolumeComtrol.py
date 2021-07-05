@@ -6,6 +6,7 @@ import sys
 from ctypes import cast, POINTER
 from comtypes import CLSCTX_ALL
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+from module import cv2_putText_4
 import pyautogui
 import handtrackingModule as htm
 
@@ -20,7 +21,7 @@ frameR = 100
 print("横：{0} 縦：{1}".format(wWin, hWin))
 
 # 動画関係設定
-cap = cv2.VideoCapture(0,cv2.CAP_DSHOW)
+cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 cap.set(3, wCam)
 cap.set(4, hCam)
 cap.set(cv2.CAP_PROP_FPS, 60)
@@ -42,7 +43,7 @@ vol = 0
 volBar = 400
 volPar = 0
 
-#操作関連
+# 操作関連
 volumeFlag = False
 volumeCounter = 0
 volumeConfirmFrag = False
@@ -52,7 +53,11 @@ allOffCounter = 0
 x8, y8 = 0, 0
 frame = 0
 f = 0
-hand=0
+hand = 0
+fontPath = "C:\\Windows\\Fonts\\arial.ttf"
+# fontPath = "C:\Windows\Fonts\HGRGM.TTC"
+
+
 print("ポインタの位置")
 # 本動作
 while True:
@@ -65,8 +70,10 @@ while True:
     # detectorの手listを取得する
     lmlist, bbox = detector.findPosition(img)
 
+    conformText = ""
     # if 手が認識した
     if len(lmlist) != 0:
+
         # print(lmlist)
 
         # 指の根元の座標listxを取得
@@ -84,7 +91,7 @@ while True:
         if (volumeFlag or mouseFlag) is False and checkedList[hand] == [1, 1, 0, 0, 0]:
             volumeFlag = True
             mouseFlag = False
-            volumeCounter = 0
+            volumeCounter = 120
             volumeConfirmFrag = False
 
         # ボリューム操作がONのとき、親指と人差し指、小指を上げるとボリュームが確定する
@@ -96,16 +103,15 @@ while True:
         if volumeFlag is False and checkedList[hand] == [0, 1, 1, 0, 0]:
             mouseFlag = True
             volumeFlag = False
-            mouseCounter = 0
+            mouseCounter = 120
 
         # クリック動作
         if mouseFlag and checkedList[hand] == [0, 1, 1, 0, 0]:
             dl = ((lmlist[hand][8][1]-lmlist[hand][12][1])**2 +
                   (lmlist[hand][8][2]-lmlist[hand][12][2])**2)**0.5
-            print('\r'+str(dl))
-            if dl > 50 and mouseCounter == 60:
-                cv2.putText(img2, "CLICK", (20, 20),
-                            cv2.FONT_HERSHEY_COMPLEX, 1, (155, 155, 155), 1)
+            # print('\r'+str(dl))
+            if dl > 50 and mouseCounter == 0:
+                conformText += "Click!!\n"
                 pyautogui.click()
 
         # 小指だけを上げているとボリューム操作がOFF マウス動作もOFF
@@ -113,7 +119,7 @@ while True:
         if (volumeFlag or mouseFlag) and checkedList[hand] == [0, 0, 0, 0, 1]:
             volumeFlag = False
             mouseFlag = False
-            allOffCounter = 0
+            allOffCounter = 120
 
         # 手の長さの範囲 50-300
         # volume range -65-0
@@ -165,22 +171,19 @@ while True:
                       (0, 255, 0), cv2.FILLED)
 
     # UI関係
-    dx,dy=0,0
-    if volumeCounter < 60 and volumeFlag:
-        volumeCounter += 1
-        cv2.putText(img2, "changed >> Volume ON", (20, 20),
-                    cv2.FONT_HERSHEY_COMPLEX, 1, (155, 155, 155), 1)
-        cv2
+    if 0 < volumeCounter and volumeFlag:
+        volumeCounter -= 1
+        conformText += "Changed >> Volume ON\n"
 
-    if mouseCounter < 60 and mouseFlag:
-        mouseCounter += 1
-        cv2.putText(img2, "changed >> Mouse ON", (20, 20),
-                    cv2.FONT_HERSHEY_COMPLEX, 1, (155, 155, 155), 1)
+    if 0 < mouseCounter and mouseFlag:
+        mouseCounter -= 1
+        conformText += "Changed >> Mouse ON\n"
 
-    if allOffCounter < 60 and (mouseFlag is False or volumeFlag is False):
-        allOffCounter += 1
-        cv2.putText(img2, "changed >> ALL OFF", (20, 20),
-                    cv2.FONT_HERSHEY_COMPLEX, 1, (155, 155, 155), 1)
+    if 0 < allOffCounter and (mouseFlag is False or volumeFlag is False):
+        allOffCounter -= 1
+        conformText += "Changed >> ALL OFF\n"
+    print(conformText)
+    cv2_putText_4(img2, conformText, (0, 0), fontPath, 30, (50, 50, 50))
 
     cv2.putText(img, f'{int(volPar)} %', (40, 450),
                 cv2.FONT_HERSHEY_COMPLEX, 1, (255, 0, 0), 3)
