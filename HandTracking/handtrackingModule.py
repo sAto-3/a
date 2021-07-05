@@ -5,7 +5,6 @@ from google.protobuf.json_format import MessageToDict, MessageToJson
 import time
 import sys
 
-from numpy import empty, radians
 import module
 
 
@@ -37,51 +36,76 @@ class handDetectior():
                     # print(self.results.multi_handdeness.classification.label)
         return img
 
-    def findPosition(self, img, drawPosition=True):
+    def findPosition(self, img, drawPosition=False, Normalization=True):
         '''
-        return 
-        self.lmlist:手のidごとの座標情報を示す[id,x,y,z]
-        bbox:手の大きさの最大・最小座標を返す[xmin,ymin,xmax,ymax]
+        input
+            img：入力画像
+            drawPosition：画像に手の位置を描画するか（初期値False）
+            Normalization：手の座標を標準化するか
+        return
+            self.lmlist:送られた画像の手と手のランドマーク座標の情報[[[id,x,y,z,LR]]]
+                id：手のランドマークのid
+                x,y,z：手のランドマークの座標
+                LR：手の右左推定（0:右 1:左）
+            bbox:各手の大きさの最大・最小座標を返す[[xmin,ymin,xmax,ymax]]
         '''
-
+        # 初期化
         xlist = []
         ylist = []
         self.lmlist = []
         bbox = []
         if self.results.multi_handedness:
+            # 各手ごとに取り出す
             for handNo, hand_handedness in enumerate(self.results.multi_handedness):
                 # print(idx)
-                handedness_dict = MessageToDict(hand_handedness)
+                # 手の右左情報の取得
+                handedness_dict = MessageToDict(
+                    hand_handedness)  # Message=>list
                 # print(handedness_dict['classification'][0]['index'])
                 HandLR = handedness_dict['classification'][0]['index']
+
+                # 手の情報を入れる配列の準備
                 xlist.append([])
                 ylist.append([])
                 self.lmlist.append([])
                 bbox.append([])
+
                 if self.results.multi_hand_landmarks:
                     # myhand = self.results.multi_hand_landmarks[handNo]
-                    for hand in self.results.multi_hand_landmarks:
-                        # print(self.results.multi_handedness)
-                        # Dict=MessageToDict(self.results.multi_handedness)
-                        # print(Dict)
+                    # print(myhand)
+                    #
+                    for i, hand in enumerate(self.results.multi_hand_landmarks):
+                        # print(hand)
+                        # 手のランドマークごとに取り出す
                         for id, lm in enumerate(hand.landmark):
                             # print(id, lm.z)
                             # print(lm.landmark[0].x)
-                            h, w, c = img.shape
-                            cx, cy, cz = int(lm.x*w), int(lm.y*h), int(lm.z*w)
+                            # print(id, cx, cy)
+
+                            cx, cy, cz = lm.x, lm.y, lm.z
+
+                            # 画像の幅、高さで正規化する
+                            if Normalization:
+                                h, w, c = img.shape
+                                cx, cy, cz = int(
+                                    lm.x*w), int(lm.y*h), int(lm.z*w)
+
+                            # 配列に入れる
                             xlist[handNo].append(cx)
                             ylist[handNo].append(cy)
-                            # print(id, cx, cy)
                             self.lmlist[handNo].append(
                                 [id, cx, cy, cz, HandLR])
-                            # if id ==0:
+
+                            # x,y座標を描画
                             if drawPosition:
                                 # cv2.circle(img, (cx, cy), 5, (255, 0, 255), cv2.FILLED)
                                 cv2.putText(img, str(id), (cx, cy),
                                             cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 0), 1)
+                        # 配列bboxの生成
                         xmin, xmax = min(xlist[handNo]), max(xlist[handNo])
                         ymin, ymax = min(ylist[handNo]), max(ylist[handNo])
                         bbox[handNo] = xmin, ymin, xmax, ymax
+        # self.lmlistとbboxで返す
         return self.lmlist, bbox
 
     def checkFinger(self):
@@ -96,29 +120,34 @@ class handDetectior():
         各指の距離を計算して指が閉じているか開いているかを01で検出する
         return
         '''
-        hand = 0
         # しきい値thread
         thread = [305, 300, 300, 300, 300]
         lmlist = self.lmlist
         ans = []
-        rads = [0]*5
-        for id in range(1, 20, 4):
-            # print(lmlist[0][1:4])
-            rads[(id-1)//4] += module.threepoint_angle(
-                lmlist[hand][0][1:4], lmlist[hand][id][1:4], lmlist[hand][id+1][1:4])
-        for id in range(2, 20, 4):
-            rads[(id-1)//4] += module.threepoint_angle(
-                lmlist[hand][id-1][1:4], lmlist[hand][id][1:4], lmlist[hand][id+1][1:4])
-        # print(rads)
-        for i in range(5):
-            if rads[i] > thread[i]:
-                rads[i] = 1
-            else:
-                rads[i] = 0
-        ans.append(rads)
-        print("\r", rads)
+        # 各手ごとに行う
+        for hand in range(len(lmlist)):
+            rads = [0]*5
+            # 第３関節は手の付け根との角度
+            for id in range(1, 20, 4):
+                print(lmlist[hand][0][1:4])
+                rads[(id-1)//4] += module.threepoint_angle(
+                    lmlist[hand][0][1:4], lmlist[hand][id][1:4], lmlist[hand][id+1][1:4])
+            # 第１・２関節は前後の関節との角度
+            for id in range(2, 20, 4):
+                rads[(id-1)//4] += module.threepoint_angle(
+                    lmlist[hand][id-1][1:4], lmlist[hand][id][1:4], lmlist[hand][id+1][1:4])
+            # print(rads)
+            # 各指がしきい値以上なら手が開いていると判断
+            for i in range(5):
+                if rads[i] > thread[i]:
+                    rads[i] = 1
+                else:
+                    rads[i] = 0
+            ans.append(rads)
 
-        return rads
+        # print("\r", rads)
+
+        return ans
 
     # def checkFinger(self):
     #     '''
@@ -143,7 +172,7 @@ def main():
     showIMG = []
     pTime = 0
     cTime = 0
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
     if not cap.isOpened():
         #
         print("Error:カメラが接続されていません！！")
@@ -161,11 +190,11 @@ def main():
 
         # 手の情報リストlmlistを取得
         lmlist, bbox = detector.findPosition(img)
-        # print(lmlist)
+        # print(len(lmlist))
         if len(lmlist) != 0:
             #     print(lmlist[0][4])  # lmlistを表示
             checkedlist = detector.checkFinger()
-            # print(checkedlist)
+            print(checkedlist)
 
         # FPSを表示
         cTime = time.time()
@@ -179,6 +208,7 @@ def main():
         k = cv2.waitKey(1)
         if k == 27:
             break
+        # Spaceキーで座標を登録
         elif k == 32:
             # 初期化
             showIMG = []
@@ -189,6 +219,7 @@ def main():
                 showIMG[hand].append([row[2] for row in lmlist[hand]])
                 showIMG[hand].append([row[3] for row in lmlist[hand]])
             print("SAVED")
+    # 保存した座標を表示
     if showIMG:
         # print(len(showIMG[0]), len(showIMG[0][0]))
         for id in range(len(showIMG[0][0])):
@@ -204,8 +235,8 @@ def main():
             elif id % 4 == 3:
                 ax.scatter(showIMG[0][0][id], showIMG[0][1]
                            [id], showIMG[0][2][id], color="#33CC00")
+        plt.show()
 
-    plt.show()
     cv2.destroyAllWindows()
 
 
