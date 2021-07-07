@@ -45,7 +45,7 @@ while True:
     # 手を認識させる
     img = detector.findHands(img)
     # detectorの手listを取得する
-    lmlist, bbox = detector.findPosition(img, Normalization=False)
+    lmlist, bbox = detector.findPosition(img)
 
     # if 手が認識した
     if len(lmlist) != 0:
@@ -96,20 +96,19 @@ if HandData:
                     ax.scatter(HandData[frame][hand][id][0], HandData[frame][hand]
                                [id][2], HandData[frame][hand][id][3], color="#33CC00")
         plt.show()
-    
-    #　numpy.save でnpy形式で出力
-    # time = 0
-    # np.save("NPY/HandData{0}.tsv".format(str(time)), HandData,delimiter="t")
 
-with open("NPY/HandData{0}.tsv".format(str(time)),"w") as outfile:
+# 　numpy.save でnpy形式で出力
+num = 0
+np.save("NPY/HandData{0}.tsv".format(str(num)), HandData,delimiter="t")
+#テキストファイルで見たいときはこれ
+with open("NPY/HandData{0}.tsv".format(str(num)), "w") as outfile:
     for slice3D in HandData:
         for slice2D in slice3D:
-            np.savetxt(outfile,slice2D)
+            np.savetxt(outfile, slice2D)
             outfile.write('# New 2Dslice\n')
         outfile.write('# New 3Dslice\n')
     # json形式で出力
-    with open("JSON/HandData{0}.json".format(str(time)), 'w') as f:
-        l = HandData.tolist()
-        s = json.dumps(l, indent=4)
-        f.write(s)
-    
+    # with open("JSON/HandData{0}.json".format(str(time)), 'w') as f:
+    #     l = HandData.tolist()
+    #     s = json.dumps(l, indent=4)
+    #     f.write(s)
