@@ -1,3 +1,4 @@
+from ctypes import FormatError
 from ctypes.wintypes import POINT
 from typing import ItemsView
 from PIL.ImageDraw import ImageDraw
@@ -24,7 +25,7 @@ print("横：{0} 縦：{1}".format(wWin, hWin))
 
 # 動画関係設定
 print("カメラ読み込み開始")
-cap = cv2.VideoCapture(0,cv2.CAP_DSHOW)
+cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 print("カメラ読み込み終了")
 cap.set(3, wCam)
 cap.set(4, hCam)
@@ -69,57 +70,65 @@ while True:
         checkedList = detector.checkFinger()
         # print(checkedList)
 
-        if (MENU_FLAG and POINT_FLAG) is not True and checkedList == [1, 1, 1, 1, 1]:
+        if MENU_FLAG is not True and checkedList[0] == [1, 1, 1, 1, 1]:
             print("MENU")
             MENU_FLAG = True
 
-        if MENU_FLAG is True and checkedList == [0, 0, 0, 0, 0]:
+        if MENU_FLAG is True and checkedList[0] == [0, 0, 0, 0, 0]:
             print("CLEAR")
             MENU_FLAG = False
 
-        if MENU_FLAG is not True and checkedList == [0, 1, 0, 0, 0]:
-            print("POINT")
-            POINT_FLAG = True
+        # if MENU_FLAG is not True and checkedList[0] == [0, 1, 0, 0, 0]:
+        #     print("POINT")
+        #     POINT_FLAG = True
 
             # フラグが立っているならメニュー動作をする。
         if MENU_FLAG:
+            # 動作
+            if checkedList[0] == [0, 1, 1, 1, 1]:
+                MODE01_FLAG = True
+            else:
+                MODE01_FLAG = False
+            if checkedList[0] == [1, 0, 1, 1, 1]:
+                MODE02_FLAG = True
+            else:
+                MODE02_FLAG = False
+            # if checkedList[0] == [0, 0, 0, 0, 0]:
+            #     MODE01_FLAG = True
+            if checkedList[0] == [1, 1, 1, 1, 0]:
+                COMFIG_FLAG = True
+            else:
+                COMFIG_FLAG = False
+            # if checkedList[0] == [0, 1, 0, 0, 0]:
+            # if checkedList[0] == [0, 0, 1, 0, 0]:
+            # if checkedList[0] == [0, 0, 0, 1, 0]:
+            # if checkedList[0] == [0, 0, 0, 0, 1]:
+
             # UI
             # タイトル
-            module.cv2_putText_4(img2, "タイトル(仮)", (350, 100),
+            module.cv2_putText_4(img2, "タイトル(仮)", (1, 50),
                                  font_Path, 30, (0, 0, 0))
 
-            # モード選択UI
+            # モード選択
+            FONT_SIZE = 20
             if MODE01_FLAG:
                 module.cv2_putText_4(
-                    img2, "モード１", (lmlist[0][4][1], lmlist[0][4][2]), font_Path, 10, (0, 0, 255))
+                    img2, "モード１", (lmlist[0][4][1], lmlist[0][4][2]), font_Path, FONT_SIZE, (0, 0, 255))
             else:
                 module.cv2_putText_4(
-                    img2, "モード１", (lmlist[0][4][1], lmlist[0][4][2]), font_Path, 10, (0, 0, 0))
-            if MODE01_FLAG:
+                    img2, "モード１", (lmlist[0][4][1], lmlist[0][4][2]), font_Path, FONT_SIZE, (0, 0, 0))
+            if MODE02_FLAG:
                 module.cv2_putText_4(
-                    img2, 'モード２', (lmlist[0][8][1], lmlist[0][8][2]), font_Path, 10, (0, 0, 255))
+                    img2, 'モード２', (lmlist[0][8][1], lmlist[0][8][2]), font_Path, FONT_SIZE, (0, 0, 255))
             else:
                 module.cv2_putText_4(
-                    img2, 'モード２', (lmlist[0][8][1], lmlist[0][8][2]), font_Path, 10, (0, 0, 0))
+                    img2, 'モード２', (lmlist[0][8][1], lmlist[0][8][2]), font_Path, FONT_SIZE, (0, 0, 0))
             if COMFIG_FLAG:
                 module.cv2_putText_4(
-                    img2, "設定", (lmlist[0][20][1], lmlist[0][20][2]), font_Path, 10, (0, 0, 255))
+                    img2, "設定", (lmlist[0][20][1], lmlist[0][20][2]), font_Path, FONT_SIZE, (0, 0, 255))
             else:
                 module.cv2_putText_4(
-                    img2, "設定", (lmlist[0][20][1], lmlist[0][20][2]), font_Path, 10, (0, 0, 0))
-
-            if checkedList == [1, 0, 0, 0, 0]:
-                MODE01_FLAG = True
-            if checkedList == [0, 1, 0, 0, 0]:
-                MODE02_FLAG = True
-            # if checkedList == [0, 0, 0, 0, 0]:
-            #     MODE01_FLAG = True
-            if checkedList == [0, 0, 0, 0, 1]:
-                COMFIG_FLAG = True
-            # if checkedList == [0, 1, 0, 0, 0]:
-            # if checkedList == [0, 0, 1, 0, 0]:
-            # if checkedList == [0, 0, 0, 1, 0]:
-            # if checkedList == [0, 0, 0, 0, 1]:
+                    img2, "設定", (lmlist[0][20][1], lmlist[0][20][2]), font_Path, FONT_SIZE, (0, 0, 0))
 
     # FPS表示設定
     cTime = time.time()

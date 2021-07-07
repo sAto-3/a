@@ -21,7 +21,8 @@ frameR = 100
 print("横：{0} 縦：{1}".format(wWin, hWin))
 
 # 動画関係設定
-cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+# cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+cap = cv2.VideoCapture(0)
 cap.set(3, wCam)
 cap.set(4, hCam)
 cap.set(cv2.CAP_PROP_FPS, 60)
@@ -50,12 +51,12 @@ volumeConfirmFrag = False
 mouseFlag = False
 mouseCounter = 0
 allOffCounter = 0
-x8, y8 = 0, 0
 frame = 0
 f = 0
 hand = 0
-fontPath = "C:\\Windows\\Fonts\\arial.ttf"
-# fontPath = "C:\Windows\Fonts\HGRGM.TTC"
+# fontPath = "C:\Windows\Fonts\CENTAUR.TTF"  # Centaur 標準
+# fontPath = "C:\Windows\Fonts\HGRME.TTC"  # HGP明朝　標準
+font_Path = "C:\Windows\Fonts\HGRGM.TTC"
 
 
 print("ポインタの位置")
@@ -71,6 +72,7 @@ while True:
     lmlist, bbox = detector.findPosition(img)
 
     conformText = ""
+    textren = 0
     # if 手が認識した
     if len(lmlist) != 0:
 
@@ -91,8 +93,8 @@ while True:
         if (volumeFlag or mouseFlag) is False and checkedList[hand] == [1, 1, 0, 0, 0]:
             volumeFlag = True
             mouseFlag = False
-            volumeCounter = 120
             volumeConfirmFrag = False
+            volumeCounter = 30
 
         # ボリューム操作がONのとき、親指と人差し指、小指を上げるとボリュームが確定する
         if volumeFlag and checkedList[hand] == [1, 1, 0, 0, 1]:
@@ -103,7 +105,7 @@ while True:
         if volumeFlag is False and checkedList[hand] == [0, 1, 1, 0, 0]:
             mouseFlag = True
             volumeFlag = False
-            mouseCounter = 120
+            mouseCounter = 30
 
         # クリック動作
         if mouseFlag and checkedList[hand] == [0, 1, 1, 0, 0]:
@@ -112,6 +114,7 @@ while True:
             # print('\r'+str(dl))
             if dl > 50 and mouseCounter == 0:
                 conformText += "Click!!\n"
+                textren += 1
                 pyautogui.click()
 
         # 小指だけを上げているとボリューム操作がOFF マウス動作もOFF
@@ -119,7 +122,7 @@ while True:
         if (volumeFlag or mouseFlag) and checkedList[hand] == [0, 0, 0, 0, 1]:
             volumeFlag = False
             mouseFlag = False
-            allOffCounter = 120
+            allOffCounter = 30
 
         # 手の長さの範囲 50-300
         # volume range -65-0
@@ -174,16 +177,20 @@ while True:
     if 0 < volumeCounter and volumeFlag:
         volumeCounter -= 1
         conformText += "Changed >> Volume ON\n"
+        textren += 1
 
     if 0 < mouseCounter and mouseFlag:
         mouseCounter -= 1
         conformText += "Changed >> Mouse ON\n"
+        textren += 1
 
     if 0 < allOffCounter and (mouseFlag is False or volumeFlag is False):
         allOffCounter -= 1
         conformText += "Changed >> ALL OFF\n"
+        textren += 1
     print(conformText)
-    cv2_putText_4(img2, conformText, (0, 0), fontPath, 30, (50, 50, 50))
+    cv2_putText_4(img2, conformText, (1, 50*textren),
+                  font_Path, 10, (255, 0, 0))
 
     cv2.putText(img, f'{int(volPar)} %', (40, 450),
                 cv2.FONT_HERSHEY_COMPLEX, 1, (255, 0, 0), 3)
