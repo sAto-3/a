@@ -118,7 +118,7 @@ while True:
                 pyautogui.click()
 
         # 小指だけを上げているとボリューム操作がOFF マウス動作もOFF
-        # TODO:音量を確定する
+        # 音量を確定する
         if (volumeFlag or mouseFlag) and checkedList[hand] == [0, 0, 0, 0, 1]:
             volumeFlag = False
             mouseFlag = False

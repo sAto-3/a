@@ -38,16 +38,16 @@ class handDetectior():
 
     def findPosition(self, img, drawPosition=False, Normalization=True):
         '''
-        input
-            img：入力画像
-            drawPosition：画像に手の位置を描画するか（初期値False）
-            Normalization：手の座標を標準化するか
-        return
-            self.lmlist:送られた画像の手と手のランドマーク座標の情報[[[id,x,y,z,LR]]]
-                id：手のランドマークのid
-                x,y,z：手のランドマークの座標
-                LR：手の右左推定（0:右 1:左）
-            bbox:各手の大きさの最大・最小座標を返す[[xmin,ymin,xmax,ymax]]
+        input  
+            img：入力画像 
+            drawPosition：画像に手の位置を描画するか（初期値False） 
+            Normalization：手の座標を標準化するか 
+        output 
+            self.lmlist:送られた画像の手と手のランドマーク座標の情報[[[id,x,y,z,LR]]] 
+                id：手のランドマークのid 
+                x,y,z：手のランドマークの座標 
+                LR：手の右左推定（0:右 1:左） 
+            bbox:各手の大きさの最大・最小座標を返す[[xmin,ymin,xmax,ymax]] 
         '''
         # 初期化
         xlist = []
@@ -194,7 +194,7 @@ def main():
         if len(lmlist) != 0:
             #     print(lmlist[0][4])  # lmlistを表示
             checkedlist = detector.checkFinger()
-            print(checkedlist)
+            # print(checkedlist)
 
         # FPSを表示
         cTime = time.time()
