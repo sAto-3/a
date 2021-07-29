@@ -51,11 +51,8 @@ while True:
 
     # if 手が認識した
     if len(lmlist) != 0:
-        # print(lmlist)
         # 指をおろしている判定を取得
         checkedList = detector.checkFinger()
-        # print(checkedList)
-        # print(len(lmlist))
 
     # 入力待ち 1F
     k = cv2.waitKey(1)
@@ -79,9 +76,9 @@ while True:
         # 　numpy.save でnpy形式で出力
         num += 1
         np.save("NPY/"+file_name +
-                "/HandData{0}.tsv".format(str(num)), HandData)
+                "/HandData{0}".format(str(num)), HandData)
         # テキストファイルで見たいときはこれ
-        with open("NPYText/"+file_name+"/HandDataText{0}.tsv".format(str(num)), "w") as outfile:
+        with open("NPYText/"+file_name+"/HandDataText{0}".format(str(num)), "w") as outfile:
             for slice3D in HandData:
                 for slice2D in slice3D:
                     np.savetxt(outfile, slice2D)
@@ -106,17 +103,17 @@ if HandData and Drawing:
         for hand in range(len(HandData[frame])):
             for id in range(21):
                 if id % 4 == 0:
-                    ax.scatter(HandData[frame][hand][id][1], HandData[frame][hand]
-                               [id][2], HandData[frame][hand][id][3], color="#DD0000")
+                    ax.scatter(HandData[frame][hand][id][1], HandData[frame][hand][id][2],
+                               HandData[frame][hand][id][3], color="#DD0000")
                 elif id % 4 == 1:
-                    ax.scatter(HandData[frame][hand][id][1], HandData[frame][hand]
-                               [id][2], HandData[frame][hand][id][3], color="#AA4400")
+                    ax.scatter(HandData[frame][hand][id][1], HandData[frame][hand][id][2],
+                               HandData[frame][hand][id][3], color="#AA4400")
                 elif id % 4 == 2:
-                    ax.scatter(HandData[frame][hand][id][1], HandData[frame][hand]
-                               [id][2], HandData[frame][hand][id][3], color="#778800")
+                    ax.scatter(HandData[frame][hand][id][1], HandData[frame][hand][id][2],
+                               HandData[frame][hand][id][3], color="#778800")
                 elif id % 4 == 3:
-                    ax.scatter(HandData[frame][hand][id][1], HandData[frame][hand]
-                               [id][2], HandData[frame][hand][id][3], color="#33CC00")
+                    ax.scatter(HandData[frame][hand][id][1], HandData[frame][hand][id][2],
+                               HandData[frame][hand][id][3], color="#33CC00")
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
         ax.set_zlabel('Z')

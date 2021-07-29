@@ -54,59 +54,129 @@ class handDetectior():
         ylist = []
         self.lmlist = []
         bbox = []
-        if self.results.multi_handedness:
+        if self.results.multi_hand_landmarks and self.results.multi_handedness:
             # 各手ごとに取り出す
-            for handNo, hand_handedness in enumerate(self.results.multi_handedness):
-                # print(idx)
-                # 手の右左情報の取得
-                handedness_dict = MessageToDict(
-                    hand_handedness)  # Message=>list
-                # print(handedness_dict['classification'][0]['index'])
-                HandLR = handedness_dict['classification'][0]['index']
-
+            for handNo, hand in enumerate(self.results.multi_hand_landmarks):
+                # print(hand)
                 # 手の情報を入れる配列の準備
                 xlist.append([])
                 ylist.append([])
                 self.lmlist.append([])
                 bbox.append([])
 
-                if self.results.multi_hand_landmarks:
-                    # myhand = self.results.multi_hand_landmarks[handNo]
-                    # print(myhand)
-                    #
-                    for i, hand in enumerate(self.results.multi_hand_landmarks):
-                        # print(hand)
-                        # 手のランドマークごとに取り出す
-                        for id, lm in enumerate(hand.landmark):
-                            # print(id, lm.z)
-                            # print(lm.landmark[0].x)
-                            # print(id, cx, cy)
+                # print(self.results.multi_handedness[handNo].classification)
+                # print(idx)
 
-                            cx, cy, cz = lm.x, lm.y, lm.z
+                # 手の右左情報の取得
+                handedness_dict = MessageToDict(
+                    self.results.multi_handedness[handNo])  # Message=>list
+                # print(handedness_dict['classification'][0]['index'])
+                HandLR = handedness_dict['classification'][0]['index']
+                # print(HandLR)
+                # 手のランドマークごとに取り出す
+                for id, lm in enumerate(hand.landmark):
 
-                            # 画像の幅、高さで正規化する
-                            if Normalization:
-                                h, w, c = img.shape
-                                cx, cy, cz = int(
-                                    lm.x*w), int(lm.y*h), int(lm.z*w)
+                    # print(id, lm.z)
+                    # print(lm.landmark[0].x)
+                    # print(id, cx, cy)
 
-                            # 配列に入れる
-                            xlist[handNo].append(cx)
-                            ylist[handNo].append(cy)
-                            self.lmlist[handNo].append(
-                                [id, cx, cy, cz, HandLR])
+                    cx, cy, cz = lm.x, lm.y, lm.z
 
-                            # x,y座標を描画
-                            if drawPosition:
-                                # cv2.circle(img, (cx, cy), 5, (255, 0, 255), cv2.FILLED)
-                                cv2.putText(img, str(id), (cx, cy),
-                                            cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 0), 1)
-                        # 配列bboxの生成
-                        xmin, xmax = min(xlist[handNo]), max(xlist[handNo])
-                        ymin, ymax = min(ylist[handNo]), max(ylist[handNo])
-                        bbox[handNo] = xmin, ymin, xmax, ymax
+                    # 画像の幅、高さで正規化する
+                    if Normalization:
+                        h, w, c = img.shape
+                        cx, cy, cz = int(
+                            lm.x*w), int(lm.y*h), int(lm.z*w)
+
+                    # 配列に入れる
+                    xlist[handNo].append(cx)
+                    ylist[handNo].append(cy)
+                    self.lmlist[handNo].append(
+                        [id, cx, cy, cz, HandLR])
+
+                    # x,y座標を描画
+                    if drawPosition:
+                        # cv2.circle(img, (cx, cy), 5, (255, 0, 255), cv2.FILLED)
+                        cv2.putText(img, str(id), (cx, cy),
+                                    cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 0), 1)
+                # 配列bboxの生成
+                xmin, xmax = min(xlist[handNo]), max(xlist[handNo])
+                ymin, ymax = min(ylist[handNo]), max(ylist[handNo])
+                bbox[handNo] = [xmin, ymin, xmax, ymax]
         # self.lmlistとbboxで返す
         return self.lmlist, bbox
+
+    # def findPosition(self, img, drawPosition=False, Normalization=True):
+    #     '''
+    #     input  
+    #         img：入力画像 
+    #         drawPosition：画像に手の位置を描画するか（初期値False） 
+    #         Normalization：手の座標を標準化するか 
+    #     output 
+    #         self.lmlist:送られた画像の手と手のランドマーク座標の情報[[[id,x,y,z,LR]]] 
+    #             id：手のランドマークのid 
+    #             x,y,z：手のランドマークの座標 
+    #             LR：手の右左推定（0:右 1:左） 
+    #         bbox:各手の大きさの最大・最小座標を返す[[xmin,ymin,xmax,ymax]] 
+    #     '''
+    #     # 初期化
+    #     xlist = []
+    #     ylist = []
+    #     self.lmlist = []
+    #     bbox = []
+    #     if self.results.multi_handedness:
+    #         # 各手ごとに取り出す
+    #         for handNo, hand_handedness in enumerate(self.results.multi_handedness):
+    #             # print(idx)
+    #             # 手の右左情報の取得
+    #             handedness_dict = MessageToDict(
+    #                 hand_handedness)  # Message=>list
+    #             # print(handedness_dict['classification'][0]['index'])
+    #             HandLR = handedness_dict['classification'][0]['index']
+
+    #             # 手の情報を入れる配列の準備
+    #             xlist.append([])
+    #             ylist.append([])
+    #             self.lmlist.append([])
+    #             bbox.append([])
+
+    #             if self.results.multi_hand_landmarks:
+    #                 # myhand = self.results.multi_hand_landmarks[handNo]
+    #                 # print(myhand)
+    #                 #
+    #                 for i, hand in enumerate(self.results.multi_hand_landmarks):
+    #                     # print(hand)
+    #                     # 手のランドマークごとに取り出す
+    #                     for id, lm in enumerate(hand.landmark):
+    #                         # print(id, lm.z)
+    #                         # print(lm.landmark[0].x)
+    #                         # print(id, cx, cy)
+
+    #                         cx, cy, cz = lm.x, lm.y, lm.z
+
+    #                         # 画像の幅、高さで正規化する
+    #                         if Normalization:
+    #                             h, w, c = img.shape
+    #                             cx, cy, cz = int(
+    #                                 lm.x*w), int(lm.y*h), int(lm.z*w)
+
+    #                         # 配列に入れる
+    #                         xlist[handNo].append(cx)
+    #                         ylist[handNo].append(cy)
+    #                         self.lmlist[handNo].append(
+    #                             [id, cx, cy, cz, HandLR])
+
+    #                         # x,y座標を描画
+    #                         if drawPosition:
+    #                             # cv2.circle(img, (cx, cy), 5, (255, 0, 255), cv2.FILLED)
+    #                             cv2.putText(img, str(id), (cx, cy),
+    #                                         cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 0), 1)
+    #                     # 配列bboxの生成
+    #                     xmin, xmax = min(xlist[handNo]), max(xlist[handNo])
+    #                     ymin, ymax = min(ylist[handNo]), max(ylist[handNo])
+    #                     bbox[handNo] = [xmin, ymin, xmax, ymax]
+    #     # self.lmlistとbboxで返す
+    #     return self.lmlist, bbox
 
     def checkFinger(self):
         '''

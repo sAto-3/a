@@ -3,11 +3,13 @@ import time
 import numpy as np
 import math
 import sys
+import itertools
 from ctypes import cast, POINTER
 from comtypes import CLSCTX_ALL
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 from module import cv2_putText_4
 import pyautogui
+import mouse
 import handtrackingModule as htm
 
 # 基本設定
@@ -21,15 +23,16 @@ frameR = 100
 print("横：{0} 縦：{1}".format(wWin, hWin))
 
 # 動画関係設定
-# cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
-cap = cv2.VideoCapture(0)
+# cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+# cap = cv2.VideoCapture(0, cv2.CAP_MSMF)
 cap.set(3, wCam)
 cap.set(4, hCam)
-cap.set(cv2.CAP_PROP_FPS, 60)
+# cap.set(cv2.CAP_PROP_FPS, 60)
 pTime = 0
 plocX, plocY = 0, 0
 clocX, clocY = 0, 0
-detector = htm.handDetectior(MaxHands=1, detectonCon=0.7)
+detector = htm.handDetectior(MaxHands=2, detectonCon=0.7)
 
 # 音量関係設定
 devices = AudioUtilities.GetSpeakers()
@@ -50,6 +53,10 @@ volumeCounter = 0
 volumeConfirmFrag = False
 mouseFlag = False
 mouseCounter = 0
+clickCounter = 0
+dragFlag = False
+intext = ""
+textinputFlag = False
 allOffCounter = 0
 frame = 0
 f = 0
@@ -58,31 +65,36 @@ hand = 0
 # fontPath = "C:\Windows\Fonts\HGRME.TTC"  # HGP明朝　標準
 font_Path = "C:\Windows\Fonts\HGRGM.TTC"
 
+textlist = ["あ"]
 
 print("ポインタの位置")
 # 本動作
 while True:
-    # 画像の読み込み
+    # 画像の読み込みHelloWorld!
+
     success, img = cap.read()
     img2 = np.full((hCam, wCam, 3), 255, dtype=np.uint8)
 
     # 手を認識させる
     img = detector.findHands(img, drawLandmark=False)
     # detectorの手listを取得する
-    lmlist, bbox = detector.findPosition(img)
+    lmlist, bbox = detector.findPosition(
+        img, drawPosition=False, Normalization=True)
 
     conformText = ""
     textren = 0
+
     # if 手が認識した
     if len(lmlist) != 0:
 
         # print(lmlist)
-
+        print(bbox)
         # 指の根元の座標listxを取得
-        Xmax, Ymax = bbox[hand][2], bbox[hand][3]
-        Xmin, Ymin = bbox[hand][0], bbox[hand][1]
+        for box in bbox:
+            Xmax, Ymax = box[2], box[3]
+            Xmin, Ymin = box[0], box[1]
+            cv2.rectangle(img2, (Xmin, Ymin), (Xmax, Ymax), 2)
 
-        cv2.rectangle(img2, (Xmin, Ymin), (Xmax, Ymax), 2)
         cv2.circle(img, (lmlist[hand][0][1], lmlist[hand]
                    [0][2]), 5, (0, 0, 255), cv2.FILLED)
         # 指をおろしている判定を取得
@@ -107,21 +119,28 @@ while True:
             volumeFlag = False
             mouseCounter = 30
 
-        # クリック動作
-        if mouseFlag and checkedList[hand] == [0, 1, 1, 0, 0]:
-            dl = ((lmlist[hand][8][1]-lmlist[hand][12][1])**2 +
-                  (lmlist[hand][8][2]-lmlist[hand][12][2])**2)**0.5
+        # マウス動作時に親指を上げるとクリック動作
+        if mouseFlag and checkedList[hand][0]:
             # print('\r'+str(dl))
-            if dl > 50 and mouseCounter == 0:
-                conformText += "Click!!\n"
+            if clickCounter == 0:
+                conformText += "ClickLeft!!\n"
                 textren += 1
-                pyautogui.click()
+                clickCounter = 20
+                mouse.click('left')
+
+        # 両手を上げると文字入力モードに
+        if textinputFlag is False and checkedList == [[1, 1, 1, 1, 1], [1, 1, 1, 1, 1]]:
+            conformText += "Textinput\n"
+            textren += 1
+            textinputFlag = True
+            intext = ""
 
         # 小指だけを上げているとボリューム操作がOFF マウス動作もOFF
         # 音量を確定する
         if (volumeFlag or mouseFlag) and checkedList[hand] == [0, 0, 0, 0, 1]:
             volumeFlag = False
             mouseFlag = False
+            textinputFlag = False
             allOffCounter = 30
 
         # 手の長さの範囲 50-300
@@ -167,11 +186,16 @@ while True:
             # print("\rX: "+str(x)+" Y: "+str(y), end="")
             # 画面内なら動かして　それ以外なら動かさない
             if 0 <= x < wWin and 0 <= y < hWin:
-                pyautogui.moveTo(x, y)
+                # pyautogui.moveTo(x, y)
+                mouse.move(x, y)
 
-        cv2.rectangle(img, (50, 150), (85, 400), (0, 255, 0), 3)
-        cv2.rectangle(img, (50, int(volBar)), (85, 400),
-                      (0, 255, 0), cv2.FILLED)
+        # 文字入力操作Flag
+        if textinputFlag:
+            st = "".join(sum(checkedList,[]))
+            print(st)
+
+            # if checkedList[hand][0] == 0:
+            #     pyautogui.write(intext)
 
     # UI関係
     if 0 < volumeCounter and volumeFlag:
@@ -188,7 +212,14 @@ while True:
         allOffCounter -= 1
         conformText += "Changed >> ALL OFF\n"
         textren += 1
-    print(conformText)
+
+    if textinputFlag:
+        conformText += "INPUTTEXT:{}".format(intext)
+    if volumeFlag:
+        cv2.rectangle(img, (50, 150), (85, 400), (0, 255, 0), 3)
+        cv2.rectangle(img, (50, int(volBar)), (85, 400),
+                      (0, 255, 0), cv2.FILLED)
+    # print(conformText)
     cv2_putText_4(img2, conformText, (1, 50*textren),
                   font_Path, 10, (255, 0, 0))
 
