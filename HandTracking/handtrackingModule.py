@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 
-class handDetectior():
+class handDetectior:
     def __init__(self, mode=False, MaxHands=2, detectonCon=0.5, trackCon=0.5):
         # class内変数selfに諸値を代入してclass上で使えるようにしておく
         self.mode = mode
@@ -21,7 +21,8 @@ class handDetectior():
         self.trackCon = trackCon
         self.mpHands = mp.solutions.hands
         self.hands = self.mpHands.Hands(
-            self.mode, self.maxHands, self.detectionCon, self.trackCon)
+            self.mode, self.maxHands, self.detectionCon, self.trackCon
+        )
         self.mpDraw = mp.solutions.drawing_utils
 
     def findHands(self, img, drawLandmark=True):
@@ -33,7 +34,6 @@ class handDetectior():
                 if drawLandmark:
                     self.mpDraw.draw_landmarks(
                         img, handLms, self.mpHands.HAND_CONNECTIONS)
-                    # print(self.results.multi_handdeness.classification.label)
         return img
 
     def findPosition(self, img, drawPosition=False, Normalization=True):
@@ -104,8 +104,28 @@ class handDetectior():
                 ymin, ymax = min(ylist[handNo]), max(ylist[handNo])
                 bbox[handNo] = [xmin, ymin, xmax, ymax]
         # self.lmlistとbboxで返す
+        if self.results.multi_hand_landmarks:
+            for myhand in self.results.multi_hand_landmarks:
+                # print(self.results.multi_handedness)
+                for id, lm in enumerate(myhand.landmark):
+                    # print(id, lm)
+                    h, w, c = img.shape
+                    cx, cy, cz = int(lm.x * w), int(lm.y * h), int(lm.z * w)
+                    xlist.append(cx)
+                    ylist.append(cy)
+                    # print(id, cx, cy)
+                    self.lmlist.append([id, cx, cy, cz])
+                    # if id ==0:
+                    if draw:
+                        # cv2.circle(img, (cx, cy), 5, (255, 0, 255), cv2.FILLED)
+                        cv2.putText(img,str(id),(cx, cy),cv2.FONT_HERSHEY_PLAIN,1,(0, 0, 0),1,)
+                        # cv2.putText(img, str(id) + " " + str(cz),(cx, cy),cv2.FONT_HERSHEY_PLAIN,1,(0, 0, 0),1)
+                xmin, xmax = min(xlist), max(xlist)
+                ymin, ymax = min(ylist), max(ylist)
+                bbox = xmin, ymin, xmax, ymax
         return self.lmlist, bbox
 
+      #過去コード
     # def findPosition(self, img, drawPosition=False, Normalization=True):
     #     '''
     #     input  
@@ -216,7 +236,18 @@ class handDetectior():
             ans.append(rads)
 
         # print("\r", rads)
-
+        ans = [0] * 5
+        for id in range(1, 6):
+            L1 = (
+                (lmlist[id * 4][1] - lmlist[0][1]) ** 2
+                + (lmlist[id * 4][2] - lmlist[0][2]) ** 2
+            ) ** 0.5
+            L2 = (
+                (lmlist[id * 4 - 2][1] - lmlist[0][1]) ** 2
+                + (lmlist[id * 4 - 2][2] - lmlist[0][2]) ** 2
+            ) ** 0.5
+            if L1 > L2:
+                ans[id - 1] = 1
         return ans
 
     # def checkFinger(self):
@@ -235,7 +266,6 @@ class handDetectior():
     #                 ans[id-1] = 1
 
     #         return ans
-
 
 def main():
     # メイン動作は終了時に指の位置を3次元散布図として出力する
@@ -256,6 +286,7 @@ def main():
         # 画像の読み込み
         success, img = cap.read()
         # print(success)
+        img = cv2.flip(img, 1)
         img = detector.findHands(img)
 
         # 手の情報リストlmlistを取得
@@ -265,14 +296,18 @@ def main():
             #     print(lmlist[0][4])  # lmlistを表示
             checkedlist = detector.checkFinger()
             # print(checkedlist)
-
+        lmlist = detector.findPosition(img)
+        # if len(lmlist) != 0:
+        #     print(lmlist[4])  # lmlistを表示
+        Finger = detector.checkFinger()
+        print(Finger)
         # FPSを表示
         cTime = time.time()
-        fps = 1/(cTime-pTime)
+        fps = 1 / (cTime - pTime)
         pTime = cTime
         cv2.putText(img, str(int(fps)), (10, 70),
                     cv2.FONT_HERSHEY_PLAIN, 3, (255, 255, 255), 2)
-
+        cv2.putText(img, str(int(fps)), (10, 70), cv2.FONT_HERSHEY_PLAIN, 3, (255, 255, 255), 2)
         # 表示
         cv2.imshow("Image", img)
         k = cv2.waitKey(1)
