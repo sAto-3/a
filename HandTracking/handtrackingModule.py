@@ -37,26 +37,28 @@ class handDetectior:
         return img
 
     def findPosition(self, img, drawPosition=False, Normalization=True):
-        '''
-        input  
-            img：入力画像 
-            drawPosition：画像に手の位置を描画するか（初期値False） 
-            Normalization：手の座標を標準化するか 
-        output 
-            self.lmlist:送られた画像の手と手のランドマーク座標の情報[[[id,x,y,z,LR]]] 
-                id：手のランドマークのid 
-                x,y,z：手のランドマークの座標 
-                LR：手の右左推定（0:右 1:左） 
-            bbox:各手の大きさの最大・最小座標を返す[[xmin,ymin,xmax,ymax]] 
-        '''
+        # input  
+        #     img：入力画像 
+        #     drawPosition：画像に手の位置を描画するか（初期値False） 
+        #     Normalization：手の座標を標準化するか 
+        # output 
+        #     self.lmlist:送られた画像の手と手のランドマーク座標の情報[[[id,x,y,z,LR]]] 
+        #         id：手のランドマークのid 
+        #         x,y,z：手のランドマークの座標 
+        #         LR：手の右左推定（0:右 1:左） 
+        #     bbox:各手の大きさの最大・最小座標を返す[[xmin,ymin,xmax,ymax]] 
+
         # 初期化
         xlist = []
         ylist = []
         self.lmlist = []
         bbox = []
+        mhand = 0
+
         if self.results.multi_hand_landmarks and self.results.multi_handedness:
             # 各手ごとに取り出す
             for handNo, hand in enumerate(self.results.multi_hand_landmarks):
+                mhand=handNo
                 # print(hand)
                 # 手の情報を入れる配列の準備
                 xlist.append([])
@@ -103,41 +105,21 @@ class handDetectior:
                 xmin, xmax = min(xlist[handNo]), max(xlist[handNo])
                 ymin, ymax = min(ylist[handNo]), max(ylist[handNo])
                 bbox[handNo] = [xmin, ymin, xmax, ymax]
-        # self.lmlistとbboxで返す
-        if self.results.multi_hand_landmarks:
-            for myhand in self.results.multi_hand_landmarks:
-                # print(self.results.multi_handedness)
-                for id, lm in enumerate(myhand.landmark):
-                    # print(id, lm)
-                    h, w, c = img.shape
-                    cx, cy, cz = int(lm.x * w), int(lm.y * h), int(lm.z * w)
-                    xlist.append(cx)
-                    ylist.append(cy)
-                    # print(id, cx, cy)
-                    self.lmlist.append([id, cx, cy, cz])
-                    # if id ==0:
-                    if draw:
-                        # cv2.circle(img, (cx, cy), 5, (255, 0, 255), cv2.FILLED)
-                        cv2.putText(img,str(id),(cx, cy),cv2.FONT_HERSHEY_PLAIN,1,(0, 0, 0),1,)
-                        # cv2.putText(img, str(id) + " " + str(cz),(cx, cy),cv2.FONT_HERSHEY_PLAIN,1,(0, 0, 0),1)
-                xmin, xmax = min(xlist), max(xlist)
-                ymin, ymax = min(ylist), max(ylist)
-                bbox = xmin, ymin, xmax, ymax
-        return self.lmlist, bbox
+        return self.lmlist, bbox, mhand
 
       #過去コード
     # def findPosition(self, img, drawPosition=False, Normalization=True):
     #     '''
-    #     input  
-    #         img：入力画像 
-    #         drawPosition：画像に手の位置を描画するか（初期値False） 
-    #         Normalization：手の座標を標準化するか 
-    #     output 
-    #         self.lmlist:送られた画像の手と手のランドマーク座標の情報[[[id,x,y,z,LR]]] 
-    #             id：手のランドマークのid 
-    #             x,y,z：手のランドマークの座標 
-    #             LR：手の右左推定（0:右 1:左） 
-    #         bbox:各手の大きさの最大・最小座標を返す[[xmin,ymin,xmax,ymax]] 
+    #     input
+    #         img：入力画像
+    #         drawPosition：画像に手の位置を描画するか（初期値False）
+    #         Normalization：手の座標を標準化するか
+    #     output
+    #         self.lmlist:送られた画像の手と手のランドマーク座標の情報[[[id,x,y,z,LR]]]
+    #             id：手のランドマークのid
+    #             x,y,z：手のランドマークの座標
+    #             LR：手の右左推定（0:右 1:左）
+    #         bbox:各手の大きさの最大・最小座標を返す[[xmin,ymin,xmax,ymax]]
     #     '''
     #     # 初期化
     #     xlist = []
@@ -200,7 +182,7 @@ class handDetectior:
 
     def checkFinger(self):
         '''
-        threepoint_angleをもちいて
+        module.threepoint_angleをもちいて
         （改善：３次元ランドマーク座標からなるベクトルの角度を求める）
         親指：1,2,3
         人差し指：5,6,7
@@ -234,20 +216,6 @@ class handDetectior:
                 else:
                     rads[i] = 0
             ans.append(rads)
-
-        # print("\r", rads)
-        ans = [0] * 5
-        for id in range(1, 6):
-            L1 = (
-                (lmlist[id * 4][1] - lmlist[0][1]) ** 2
-                + (lmlist[id * 4][2] - lmlist[0][2]) ** 2
-            ) ** 0.5
-            L2 = (
-                (lmlist[id * 4 - 2][1] - lmlist[0][1]) ** 2
-                + (lmlist[id * 4 - 2][2] - lmlist[0][2]) ** 2
-            ) ** 0.5
-            if L1 > L2:
-                ans[id - 1] = 1
         return ans
 
     # def checkFinger(self):
