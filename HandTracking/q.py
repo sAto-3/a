@@ -3,12 +3,7 @@ import random
 
 
 async def f(n):
-    tasks = (
-        #仕事の内容
-        asyncio.ensure_future(get_content('a')),
-        asyncio.ensure_future(get_content('b')),
-        asyncio.ensure_future(get_content('c')),
-    )
+    tasks = (asyncio.ensure_future(get_content('a')), asyncio.ensure_future(get_content('b')), asyncio.ensure_future(get_content('c')),)  # 仕事の内容
     
     return n, await asyncio.gather(*tasks)
 

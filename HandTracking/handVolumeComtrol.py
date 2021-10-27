@@ -82,9 +82,7 @@ while True:
     # 手を認識させる
     img = detector.findHands(img, drawLandmark=False)
     # detectorから 手位置lmlist 手の大きさbbox 手の本数handを取得する
-    lmlist, bbox, hand = detector.findPosition(
-        img, drawPosition=False, Normalization=True
-    )
+    lmlist, bbox, hand = detector.findPosition(img, drawPosition=False, Normalization=True)
 
     conformText = ""
     textren = 0
@@ -190,21 +188,12 @@ while True:
         # マウス操作Flag
         if mouseFlag:
             # frameR[100] dot分の余裕をもたせてマウス操作ウィンドウを表示
-            cv2.rectangle(
-                img, (frameR, frameR), (wCam - frameR, hCam - frameR), (255, 0, 255), 2
-            )
-            cv2.rectangle(
-                img2, (frameR, frameR), (wCam - frameR, hCam - frameR), (255, 0, 255), 2
-            )
+            cv2.rectangle(img, (frameR, frameR), (wCam - frameR, hCam - frameR), (255, 0, 255), 2)
+            cv2.rectangle(img2, (frameR, frameR), (wCam - frameR, hCam - frameR), (255, 0, 255), 2)
             # 座標計算
             x, y = lmlist[0][12][1] - frameR, lmlist[0][12][2] - frameR
-            x, y = (
-                int(x / (wCam - (frameR * 2)) * wWin),
-                int(y / (hCam - (frameR * 2)) * hWin),
-            )
-            cv2.circle(
-                img2, (lmlist[0][12][1], lmlist[0][12][2]), 10, (255, 0, 0), cv2.FILLED,
-            )
+            x, y = (int(x / (wCam - (frameR * 2)) * wWin),int(y / (hCam - (frameR * 2)) * hWin),)
+            cv2.circle(img2, (lmlist[0][12][1], lmlist[0][12][2]), 10, (255, 0, 0), cv2.FILLED,)
             # 移動
             # print("\rX: "+str(x)+" Y: "+str(y), end="")
             # 画面内なら動かして　それ以外なら動かさない
@@ -276,9 +265,7 @@ while True:
     # print(conformText)
     cv2_putText_4(img2, conformText, (1, 50 * textren), font_Path, 10, (255, 0, 0))
 
-    cv2.putText(
-        img, f"{int(volPar)} %", (40, 450), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 0, 0), 3
-    )
+    cv2.putText(img, f"{int(volPar)} %", (40, 450), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 0, 0), 3)
 
     wframe=max(0,wframe-1)
 
@@ -286,9 +273,7 @@ while True:
     cTime = time.time()
     fps = 1 / (cTime - pTime)
     pTime = cTime
-    cv2.putText(
-        img, f"FPS: {int(fps)}", (40, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 0, 0), 3
-    )
+    cv2.putText(img, f"FPS: {int(fps)}", (40, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 0, 0), 3)
 
     # 画像の表示
     cv2.imshow("Image", img)

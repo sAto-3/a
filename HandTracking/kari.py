@@ -111,59 +111,17 @@ while True:
             # モード選択
             FONT_SIZE = 20
             if MODE01_FLAG:
-                module.cv2_putText_4(
-                    img2,
-                    "モード１",
-                    (lmlist[0][4][1], lmlist[0][4][2]),
-                    font_Path,
-                    FONT_SIZE,
-                    (0, 0, 255),
-                )
+                module.cv2_putText_4(img2,"モード１",(lmlist[0][4][1], lmlist[0][4][2]),font_Path,FONT_SIZE,(0, 0, 255),)
             else:
-                module.cv2_putText_4(
-                    img2,
-                    "モード１",
-                    (lmlist[0][4][1], lmlist[0][4][2]),
-                    font_Path,
-                    FONT_SIZE,
-                    (0, 0, 0),
-                )
+                module.cv2_putText_4(img2,"モード１",(lmlist[0][4][1], lmlist[0][4][2]),font_Path,FONT_SIZE,(0, 0, 0),)
             if MODE02_FLAG:
-                module.cv2_putText_4(
-                    img2,
-                    "モード２",
-                    (lmlist[0][8][1], lmlist[0][8][2]),
-                    font_Path,
-                    FONT_SIZE,
-                    (0, 0, 255),
-                )
+                module.cv2_putText_4(img2,"モード２",(lmlist[0][8][1], lmlist[0][8][2]),font_Path,FONT_SIZE,(0, 0, 255),)
             else:
-                module.cv2_putText_4(
-                    img2,
-                    "モード２",
-                    (lmlist[0][8][1], lmlist[0][8][2]),
-                    font_Path,
-                    FONT_SIZE,
-                    (0, 0, 0),
-                )
+                module.cv2_putText_4(img2,"モード２",(lmlist[0][8][1], lmlist[0][8][2]),font_Path,FONT_SIZE,(0, 0, 0),)
             if COMFIG_FLAG:
-                module.cv2_putText_4(
-                    img2,
-                    "設定",
-                    (lmlist[0][20][1], lmlist[0][20][2]),
-                    font_Path,
-                    FONT_SIZE,
-                    (0, 0, 255),
-                )
+                module.cv2_putText_4(img2,"設定",(lmlist[0][20][1], lmlist[0][20][2]),font_Path,FONT_SIZE,(0, 0, 255),)
             else:
-                module.cv2_putText_4(
-                    img2,
-                    "設定",
-                    (lmlist[0][20][1], lmlist[0][20][2]),
-                    font_Path,
-                    FONT_SIZE,
-                    (0, 0, 0),
-                )
+                module.cv2_putText_4(img2,"設定",(lmlist[0][20][1], lmlist[0][20][2]),font_Path,FONT_SIZE,(0, 0, 0),)
 
     # FPS表示設定
     cTime = time.time()

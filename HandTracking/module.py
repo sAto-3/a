@@ -40,7 +40,10 @@ def cv2_putText_5(img, text, org, fontFace, fontScale, color):
         draw = ImageDraw.Draw(imgPIL)
         draw.text(xy=(0, 0), text=text, fill=color, font=fontPIL)
         img[int(y - h/2) : int(y + h/2), int(x - w/2) : int(x + w/2), :] = np.array(imgPIL, dtype=np.uint8)
-    return img
+        return img
+    else:
+        return False#文字が範囲外
+
 
 def threepoint_angle(p1, p2, p3):
     a = np.array(p1)

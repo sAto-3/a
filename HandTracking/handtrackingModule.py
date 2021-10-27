@@ -20,9 +20,7 @@ class handDetectior:
         self.detectionCon = detectonCon
         self.trackCon = trackCon
         self.mpHands = mp.solutions.hands
-        self.hands = self.mpHands.Hands(
-            self.mode, self.maxHands, self.detectionCon, self.trackCon
-        )
+        self.hands = self.mpHands.Hands(self.mode, self.maxHands, self.detectionCon, self.trackCon)
         self.mpDraw = mp.solutions.drawing_utils
 
     def findHands(self, img, drawLandmark=True):
@@ -32,21 +30,20 @@ class handDetectior:
         if self.results.multi_hand_landmarks:
             for handLms in self.results.multi_hand_landmarks:
                 if drawLandmark:
-                    self.mpDraw.draw_landmarks(
-                        img, handLms, self.mpHands.HAND_CONNECTIONS)
+                    self.mpDraw.draw_landmarks(img, handLms, self.mpHands.HAND_CONNECTIONS)
         return img
 
     def findPosition(self, img, drawPosition=False, Normalization=True):
-        # input  
-        #     img：入力画像 
-        #     drawPosition：画像に手の位置を描画するか（初期値False） 
-        #     Normalization：手の座標を標準化するか 
-        # output 
-        #     self.lmlist:送られた画像の手と手のランドマーク座標の情報[[[id,x,y,z,LR]]] 
-        #         id：手のランドマークのid 
-        #         x,y,z：手のランドマークの座標 
-        #         LR：手の右左推定（0:右 1:左） 
-        #     bbox:各手の大きさの最大・最小座標を返す[[xmin,ymin,xmax,ymax]] 
+        # input
+        #     img：入力画像
+        #     drawPosition：画像に手の位置を描画するか（初期値False）
+        #     Normalization：手の座標を標準化するか
+        # output
+        #     self.lmlist:送られた画像の手と手のランドマーク座標の情報[[[id,x,y,z,LR]]]
+        #         id：手のランドマークのid
+        #         x,y,z：手のランドマークの座標
+        #         LR：手の右左推定（0:右 1:左）
+        #     bbox:各手の大きさの最大・最小座標を返す[[xmin,ymin,xmax,ymax]]
 
         # 初期化
         xlist = []
@@ -58,7 +55,7 @@ class handDetectior:
         if self.results.multi_hand_landmarks and self.results.multi_handedness:
             # 各手ごとに取り出す
             for handNo, hand in enumerate(self.results.multi_hand_landmarks):
-                mhand=handNo
+                mhand = handNo
                 # print(hand)
                 # 手の情報を入れる配列の準備
                 xlist.append([])
@@ -70,8 +67,7 @@ class handDetectior:
                 # print(idx)
 
                 # 手の右左情報の取得
-                handedness_dict = MessageToDict(
-                    self.results.multi_handedness[handNo])  # Message=>list
+                handedness_dict = MessageToDict(self.results.multi_handedness[handNo])  # Message=>list
                 # print(handedness_dict['classification'][0]['index'])
                 HandLR = handedness_dict['classification'][0]['index']
                 # print(HandLR)
@@ -87,8 +83,7 @@ class handDetectior:
                     # 画像の幅、高さで正規化する
                     if Normalization:
                         h, w, c = img.shape
-                        cx, cy, cz = int(
-                            lm.x*w), int(lm.y*h), int(lm.z*w)
+                        cx, cy, cz = int(lm.x*w), int(lm.y*h), int(lm.z*w)
 
                     # 配列に入れる
                     xlist[handNo].append(cx)
@@ -99,15 +94,14 @@ class handDetectior:
                     # x,y座標を描画
                     if drawPosition:
                         # cv2.circle(img, (cx, cy), 5, (255, 0, 255), cv2.FILLED)
-                        cv2.putText(img, str(id), (cx, cy),
-                                    cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 0), 1)
+                        cv2.putText(img, str(id), (cx, cy), cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 0), 1)
                 # 配列bboxの生成
                 xmin, xmax = min(xlist[handNo]), max(xlist[handNo])
                 ymin, ymax = min(ylist[handNo]), max(ylist[handNo])
                 bbox[handNo] = [xmin, ymin, xmax, ymax]
         return self.lmlist, bbox, mhand
 
-      #過去コード
+      # 過去コード
     # def findPosition(self, img, drawPosition=False, Normalization=True):
     #     '''
     #     input
@@ -131,8 +125,7 @@ class handDetectior:
     #         for handNo, hand_handedness in enumerate(self.results.multi_handedness):
     #             # print(idx)
     #             # 手の右左情報の取得
-    #             handedness_dict = MessageToDict(
-    #                 hand_handedness)  # Message=>list
+    #             handedness_dict = MessageToDict(hand_handedness)  # Message=>list
     #             # print(handedness_dict['classification'][0]['index'])
     #             HandLR = handedness_dict['classification'][0]['index']
 
@@ -159,20 +152,17 @@ class handDetectior:
     #                         # 画像の幅、高さで正規化する
     #                         if Normalization:
     #                             h, w, c = img.shape
-    #                             cx, cy, cz = int(
-    #                                 lm.x*w), int(lm.y*h), int(lm.z*w)
+    #                             cx, cy, cz = int(lm.x*w), int(lm.y*h), int(lm.z*w)
 
     #                         # 配列に入れる
     #                         xlist[handNo].append(cx)
     #                         ylist[handNo].append(cy)
-    #                         self.lmlist[handNo].append(
-    #                             [id, cx, cy, cz, HandLR])
+    #                         self.lmlist[handNo].append([id, cx, cy, cz, HandLR])
 
     #                         # x,y座標を描画
     #                         if drawPosition:
     #                             # cv2.circle(img, (cx, cy), 5, (255, 0, 255), cv2.FILLED)
-    #                             cv2.putText(img, str(id), (cx, cy),
-    #                                         cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 0), 1)
+    #                             cv2.putText(img, str(id), (cx, cy),cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 0), 1)
     #                     # 配列bboxの生成
     #                     xmin, xmax = min(xlist[handNo]), max(xlist[handNo])
     #                     ymin, ymax = min(ylist[handNo]), max(ylist[handNo])
@@ -202,12 +192,10 @@ class handDetectior:
             # 第３関節は手の付け根との角度
             for id in range(1, 20, 4):
                 # print(lmlist[hand][0][1:4])
-                rads[(id-1)//4] += module.threepoint_angle(
-                    lmlist[hand][0][1:4], lmlist[hand][id][1:4], lmlist[hand][id+1][1:4])
+                rads[(id-1)//4] += module.threepoint_angle(lmlist[hand][0][1:4], lmlist[hand][id][1:4], lmlist[hand][id+1][1:4])
             # 第１・２関節は前後の関節との角度
             for id in range(2, 20, 4):
-                rads[(id-1)//4] += module.threepoint_angle(
-                    lmlist[hand][id-1][1:4], lmlist[hand][id][1:4], lmlist[hand][id+1][1:4])
+                rads[(id-1)//4] += module.threepoint_angle(lmlist[hand][id-1][1:4], lmlist[hand][id][1:4], lmlist[hand][id+1][1:4])
             # print(rads)
             # 各指がしきい値以上なら手が開いていると判断
             for i in range(5):
@@ -235,6 +223,7 @@ class handDetectior:
 
     #         return ans
 
+
 def main():
     # メイン動作は終了時に指の位置を3次元散布図として出力する
     showIMG = []
@@ -258,7 +247,7 @@ def main():
         img = detector.findHands(img)
 
         # 手の情報リストlmlistを取得
-        lmlist, bbox = detector.findPosition(img)
+        lmlist, bbox, _ = detector.findPosition(img)
         # print(len(lmlist))
         if len(lmlist) != 0:
             #     print(lmlist[0][4])  # lmlistを表示
@@ -273,8 +262,7 @@ def main():
         cTime = time.time()
         fps = 1 / (cTime - pTime)
         pTime = cTime
-        cv2.putText(img, str(int(fps)), (10, 70),
-                    cv2.FONT_HERSHEY_PLAIN, 3, (255, 255, 255), 2)
+        cv2.putText(img, str(int(fps)), (10, 70), cv2.FONT_HERSHEY_PLAIN, 3, (255, 255, 255), 2)
         cv2.putText(img, str(int(fps)), (10, 70), cv2.FONT_HERSHEY_PLAIN, 3, (255, 255, 255), 2)
         # 表示
         cv2.imshow("Image", img)
@@ -297,17 +285,13 @@ def main():
         # print(len(showIMG[0]), len(showIMG[0][0]))
         for id in range(len(showIMG[0][0])):
             if id % 4 == 0:
-                ax.scatter(showIMG[0][0][id], showIMG[0][1]
-                           [id], showIMG[0][2][id], color="#DD0000")
+                ax.scatter(showIMG[0][0][id], showIMG[0][1][id], showIMG[0][2][id], color="#DD0000")
             elif id % 4 == 1:
-                ax.scatter(showIMG[0][0][id], showIMG[0][1]
-                           [id], showIMG[0][2][id], color="#AA4400")
+                ax.scatter(showIMG[0][0][id], showIMG[0][1][id], showIMG[0][2][id], color="#AA4400")
             elif id % 4 == 2:
-                ax.scatter(showIMG[0][0][id], showIMG[0][1]
-                           [id], showIMG[0][2][id], color="#778800")
+                ax.scatter(showIMG[0][0][id], showIMG[0][1][id], showIMG[0][2][id], color="#778800")
             elif id % 4 == 3:
-                ax.scatter(showIMG[0][0][id], showIMG[0][1]
-                           [id], showIMG[0][2][id], color="#33CC00")
+                ax.scatter(showIMG[0][0][id], showIMG[0][1][id], showIMG[0][2][id], color="#33CC00")
         plt.show()
 
     cv2.destroyAllWindows()

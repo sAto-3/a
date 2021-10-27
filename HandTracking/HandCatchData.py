@@ -103,17 +103,13 @@ if HandData and Drawing:
         for hand in range(len(HandData[frame])):
             for id in range(21):
                 if id % 4 == 0:
-                    ax.scatter(HandData[frame][hand][id][1], HandData[frame][hand][id][2],
-                               HandData[frame][hand][id][3], color="#DD0000")
+                    ax.scatter(HandData[frame][hand][id][1], HandData[frame][hand][id][2], HandData[frame][hand][id][3], color="#DD0000")
                 elif id % 4 == 1:
-                    ax.scatter(HandData[frame][hand][id][1], HandData[frame][hand][id][2],
-                               HandData[frame][hand][id][3], color="#AA4400")
+                    ax.scatter(HandData[frame][hand][id][1], HandData[frame][hand][id][2], HandData[frame][hand][id][3], color="#AA4400")
                 elif id % 4 == 2:
-                    ax.scatter(HandData[frame][hand][id][1], HandData[frame][hand][id][2],
-                               HandData[frame][hand][id][3], color="#778800")
+                    ax.scatter(HandData[frame][hand][id][1], HandData[frame][hand][id][2], HandData[frame][hand][id][3], color="#778800")
                 elif id % 4 == 3:
-                    ax.scatter(HandData[frame][hand][id][1], HandData[frame][hand][id][2],
-                               HandData[frame][hand][id][3], color="#33CC00")
+                    ax.scatter(HandData[frame][hand][id][1], HandData[frame][hand][id][2], HandData[frame][hand][id][3], color="#33CC00")
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
         ax.set_zlabel('Z')
@@ -126,8 +122,7 @@ if HandData and Drawing:
         plt.close()
         im = Image.open("IMG/"+file_name + "/figs{0}.png".format(frame))
         IMGList.append(im)
-    IMGList[0].save("IMG/"+file_name+'output.gif', save_all=True,
-                    append_images=IMGList[1:], loop=0, duration=30)
+    IMGList[0].save("IMG/"+file_name+'output.gif', save_all=True, append_images=IMGList[1:], loop=0, duration=30)
 
 # json形式で出力
 # with open("JSON/HandData{0}.json".format(str(time)), 'w') as f:
