@@ -99,6 +99,13 @@ class handDetectior:
                 xmin, xmax = min(xlist[handNo]), max(xlist[handNo])
                 ymin, ymax = min(ylist[handNo]), max(ylist[handNo])
                 bbox[handNo] = [xmin, ymin, xmax, ymax]
+
+            # if #右左が逆なら入れ替える
+            if self.lmlist[0][0][4] == 0 and mhand == 1:
+                self.lmlist[0], self.lmlist[1] = self.lmlist[1], self.lmlist[0]
+
+        # 移動
+
         return self.lmlist, bbox, mhand
 
       # 過去コード

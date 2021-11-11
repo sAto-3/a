@@ -137,6 +137,8 @@ while True:
         checkedList = detector.checkFinger()
         # print(checkedList)　#確認
 
+
+
         # ***フラグ処理***
         # ・volumeFlag：ボリューム操作をするフラグ
         # ・mouseFlag：マウス操作をするフラグ
@@ -189,8 +191,6 @@ while True:
         # フリック入力()
         # KEYBOARDLIST
         # KEYBOARDは初期位置+50音の位置
-        # 実行
-        # 親指を伸ばしたら選択状態になる
         # if Flick_Flag:
         if checkedList[0][0]:
             # 最初は位置を記憶して判別する
@@ -200,7 +200,7 @@ while True:
                 # 縦から
                 for ix in range(5):
                     for iy in range(5):
-                        if ix*wVisal/5 <= flick_x < (ix+1)*wVisal/5 and iy*hVisal/5 <= flick_y < (iy+1)*hVisal/5:
+                        if ix * wVisal / 5 <= flick_x < (ix + 1) * wVisal / 5 and iy * hVisal / 5 <= flick_y < (iy + 1) * hVisal / 5:
                             KEYBOARDLIST[ix][iy] = True
                             xx, yy = ix, iy
                             # print(ix,iy)
@@ -215,27 +215,27 @@ while True:
                 # 特別例
                 # delete
                 # space
-                if 4*wVisal/5 <= flick_now_x < 5*wVisal/5 and 3*hVisal/5 <= flick_now_y < 4*hVisal/5:
+                if 4 * wVisal / 5 <= flick_now_x < 5 * wVisal / 5 and 3 * hVisal / 5 <= flick_now_y < 4 * hVisal / 5:
                     text = "　"
                 # enter
                 # Quit
 
                 for ix in range(5):
                     for iy in range(5):
-                        if ix*wVisal/5 <= flick_now_x < (ix+1)*wVisal/5 and iy*hVisal/5 <= flick_now_y < (iy+1)*hVisal/5:
+                        if ix * wVisal / 5 <= flick_now_x < (ix + 1) * wVisal / 5 and iy * hVisal / 5 <= flick_now_y < (iy + 1) * hVisal / 5:
                             if ix == xx and iy == yy:
                                 # あ行
                                 text = KEYBOARD[yy][xx][0]
-                            elif ix+1 == xx and iy == yy:
+                            elif ix + 1 == xx and iy == yy:
                                 # い行
                                 text = KEYBOARD[yy][xx][1]
-                            elif ix == xx and iy+1 == yy:
+                            elif ix == xx and iy + 1 == yy:
                                 # う行
                                 text = KEYBOARD[yy][xx][2]
-                            elif ix-1 == xx and iy == yy:
+                            elif ix - 1 == xx and iy == yy:
                                 # え行
                                 text = KEYBOARD[yy][xx][3]
-                            elif ix == xx and iy-1 == yy:
+                            elif ix == xx and iy - 1 == yy:
                                 # お行
                                 text = KEYBOARD[yy][xx][4]
                             break
@@ -280,14 +280,14 @@ while True:
         # UI生成
         # 線
         for i in range(5):
-            cv2.line(img2, (i*wVisal//5, 0), (i*wVisal//5, hVisal), (255, 0, 0), 1)
+            cv2.line(img2, (i * wVisal // 5, 0), (i * wVisal // 5, hVisal), (255, 0, 0), 1)
             cv2.line(img2, (0, i * hVisal // 5), (wVisal, i * hVisal // 5), (255, 0, 0), 1)
 
         # 選択時の背景色 #FF6666
         for id_x in range(5):
             for id_y in range(5):
                 if KEYBOARDLIST[id_x][id_y]:
-                    cv2.rectangle(img2, (id_x*wVisal//5, id_y*hVisal//5), ((id_x+1) * wVisal // 5, (id_y+1)*hVisal//5), (102, 102, 255), thickness=-1)
+                    cv2.rectangle(img2, (id_x * wVisal // 5, id_y * hVisal // 5), ((id_x + 1) * wVisal // 5, (id_y + 1) * hVisal // 5), (102, 102, 255), thickness=-1)
 
         # 文字 #9999FF
         for id_x in range(1, 4):

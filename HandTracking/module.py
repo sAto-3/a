@@ -21,28 +21,30 @@ def cv2_putText_4(img, text, org, fontFace, fontScale, color):
     fontPIL = ImageFont.truetype(font=fontFace, size=fontScale)
     dummy_draw = ImageDraw.Draw(Image.new("RGB", (0, 0)))
     w, h = dummy_draw.textsize(text, font=fontPIL)
-    if 0<x+w<width and 0<y-h<height:
-        imgPIL = Image.fromarray(img[y - h : y, x : x + w, :])
+    if 0 < x+w < width and 0 < y-h < height:
+        imgPIL = Image.fromarray(img[y - h: y, x: x + w, :])
         draw = ImageDraw.Draw(imgPIL)
         draw.text(xy=(0, 0), text=text, fill=color, font=fontPIL)
-        img[y - h : y, x : x + w, :] = np.array(imgPIL, dtype=np.uint8)
+        img[y - h: y, x: x + w, :] = np.array(imgPIL, dtype=np.uint8)
     return img
 
-#中心座標から文字の描写をしたい
+# 中心座標から文字の描写をしたい
 def cv2_putText_5(img, text, org, fontFace, fontScale, color):
+    if text == "" and text ==" ":
+        return False
     x, y = org
     height, width, dim = img.shape
     fontPIL = ImageFont.truetype(font=fontFace, size=fontScale)
     dummy_draw = ImageDraw.Draw(Image.new("RGB", (0, 0)))
     w, h = dummy_draw.textsize(text, font=fontPIL)
     if 0 < x - w/2 < width and 0 < x + w/2 < width and 0 < y - h/2 < height and 0 < y + h/2 < height:
-        imgPIL = Image.fromarray(img[int(y - h/2) : int(y + h/2), int(x - w/2) : int(x + w/2), :])
+        imgPIL = Image.fromarray(img[int(y - h/2): int(y + h/2), int(x - w/2): int(x + w/2), :])
         draw = ImageDraw.Draw(imgPIL)
         draw.text(xy=(0, 0), text=text, fill=color, font=fontPIL)
-        img[int(y - h/2) : int(y + h/2), int(x - w/2) : int(x + w/2), :] = np.array(imgPIL, dtype=np.uint8)
+        img[int(y - h/2): int(y + h/2), int(x - w/2): int(x + w/2), :] = np.array(imgPIL, dtype=np.uint8)
         return img
     else:
-        return False#文字が範囲外
+        return False  # 文字が範囲外
 
 
 def threepoint_angle(p1, p2, p3):
@@ -62,4 +64,3 @@ def threepoint_angle(p1, p2, p3):
     degree = np.rad2deg(rad)
 
     return degree
-
