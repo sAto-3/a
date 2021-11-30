@@ -3,8 +3,12 @@
 # ソケット通信(クライアント側)
 import socket
 
-ip1 = '127.0.0.1'
-port1 = 8765
+# ip1 = '172.25.180.202' #自分のipアドレス
+ip1=socket.gethostname() #こっちも可：何ならこっちのほうがいい説
+print(ip1)
+# ip2 = "192.168.11.4"
+# ip1 = '127.0.0.1'
+port1 = 8775
 server1 = (ip1, port1)
 
 socket1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -14,7 +18,7 @@ print("connected!")
 line = ''
 while line != 'bye':
     # 標準入力からデータを取得
-    print('偶数の数値を入力して下さい')
+    print('好きな文字を入力してください（終了は"bye"）')
     line = input('>>>')
     # サーバに送信
     socket1.send(line.encode("UTF-8"))
