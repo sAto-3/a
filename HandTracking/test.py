@@ -169,7 +169,7 @@ class MyVideoCapture:
         #cam1の画面サイズ取得
         self.width = self.vid.get(cv2.CAP_PROP_FRAME_WIDTH)
         self.height = self.vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
-
+        
     def get_frame(self):
         '''
         cam1画像取得

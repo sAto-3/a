@@ -1,4 +1,4 @@
-#TODO:
+# TODO:
 # ・reterun forward機能追加：文字の入力の取り消しや進める機能
 
 import sys
@@ -59,24 +59,26 @@ KEYBOARD_NUMPER = [
     [["Quit", " ", " ", " ", " "], ["ー", " ", " ", " ", " "], ["0", " ", " ", " ", " "], ["゛", " ", " ", " ", " "], ["Input", "Enter", "search", " ", " "]], ]
 
 
-class Application(tk.Frame):
-    def __init__(self, master=None):
-        super().__init__(master)
+class Application(tk.Tk):
+    def __init__(self, master1=None, *args, **kwargs):
+        tk.Frame.__init__(self, master1)
+        self.master1=tk.Frame()
         self.pack()
+
         # self.wRoot, self.hRoot = 390, 400
         self.wRoot, self.hRoot = 800, 800
-        self.master.title(u"OpenCVの動画表示")       # ウィンドウタイトル
-        self.master.geometry("{0}x{1}".format(self.wRoot, self.hRoot))     # ウィンドウサイズ(幅x高さ)
+        self.master1.title(u"OpenCVの動画表示")       # ウィンドウタイトル
+        self.master1.geometry("{0}x{1}".format(self.wRoot, self.hRoot))     # ウィンドウサイズ(幅x高さ)
 
         # Canvasの作成
-        self.canvas = tk.Canvas(self.master, highlightthickness=0)
+        self.canvas = tk.Canvas(self.master1, highlightthickness=0)
         # Canvasにマウスイベント（左ボタンクリック）の追加
         self.canvas.bind('<Button-1>', self.canvas_click)
         # Canvasを配置
         self.canvas.pack(expand=1, fill=tk.BOTH)
 
         # 文字入力フォームの作成
-        self.entry1 = tkinter.Entry(self.master, font=("", 20))
+        self.entry1 = tkinter.Entry(self.master1, font=("", 20))
         self.entry1.focus_set()
         self.entry1.pack()
 
@@ -92,16 +94,16 @@ class Application(tk.Frame):
         # 基本設定
         # ウィンドウの大きさの設定
         self.wCam, self.hCam = 1000, 700
-        #入力結果表示UI用スペース
+        # 入力結果表示UI用スペース
         self.spaceH = 300
         self.spaceW = 150
-        #入力キーボード表示UIのスペース
+        # 入力キーボード表示UIのスペース
         self.wVisal = self.wCam-self.spaceW
         self.hVisal = self.hCam-self.spaceH
-        #入力テキスト表示UI用変数
+        # 入力テキスト表示UI用変数
         self.INPUT_TEXTS = u""
         self.INPUT_TEXTS_UI = u""
-        #キーボード選択リスト
+        # キーボード選択リスト
         self.KEYBOARDLIST = np.full((5, 5), False).tolist()
         self.KEYBOARDREMEN = True
         self.xx, self.yy = 0, 0
@@ -123,13 +125,13 @@ class Application(tk.Frame):
             self.disp_id = None
 
     def server_connect(self):
-        #TCP通信関係
+        # TCP通信関係
         #
         HOSTNAME = "172.25.180.202"  # 自分のサーバーのIPアドレス
         PORT = 10541
 
-        #ipv4を使うので、AF_INET
-        #tcp/ip通信を使いたいので、SOCK_STREAM
+        # ipv4を使うので、AF_INET
+        # tcp/ip通信を使いたいので、SOCK_STREAM
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect((HOSTNAME, PORT))
         # self.sock=sock
@@ -381,7 +383,6 @@ class Application(tk.Frame):
 
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = Application(master=root)
+    app = Application()
     app.server_connect()
     app.mainloop()
