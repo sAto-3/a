@@ -10,7 +10,7 @@ import cv2
 import numpy as np
 import pyautogui
 import pykakasi
-from PIL import Image, ImageOps, ImageTk  # 画像データ用
+from PIL import Image, ImageOps, ImageTk
 
 import handtrackingModule as htm
 from module import cv2_putText_5
@@ -60,15 +60,18 @@ KEYBOARD_NUMPER = [
 
 
 class Application(tk.Tk):
-    def __init__(self, master1=None, *args, **kwargs):
-        tk.Frame.__init__(self, master1)
-        self.master1=tk.Frame()
-        self.pack()
+    def __init__(self, *args, **kwargs):
+        tk.Tk.__init__(self, *args, **kwargs)
+        self.title("HandFrickInput")
+
+        self.wRoot, self.hRoot = 700, 700
+        self.geometry("{0}x{1}".format(self.wRoot, self.hRoot))     # ウィンドウサイズ(幅x高さ)
+        # 初期画面 master0の作成
+
+        # 入力画面 master1の作成
+        self.master1 = tk.Frame()
 
         # self.wRoot, self.hRoot = 390, 400
-        self.wRoot, self.hRoot = 800, 800
-        self.master1.title(u"OpenCVの動画表示")       # ウィンドウタイトル
-        self.master1.geometry("{0}x{1}".format(self.wRoot, self.hRoot))     # ウィンドウサイズ(幅x高さ)
 
         # Canvasの作成
         self.canvas = tk.Canvas(self.master1, highlightthickness=0)
@@ -113,8 +116,11 @@ class Application(tk.Tk):
         # 初期キーボードはかな入力に
         self.KEYBOARD = KEYBOARD_HIRA
 
+        # self.Flick_Frag = True
+
     def canvas_click(self, event):
         '''Canvasのマウスクリックイベント'''
+        print(self.disp_id)
         if self.disp_id is None:
             # 動画を表示
             pyautogui.press("kanji")
@@ -127,7 +133,8 @@ class Application(tk.Tk):
     def server_connect(self):
         # TCP通信関係
         #
-        HOSTNAME = "172.25.180.202"  # 自分のサーバーのIPアドレス
+        # HOSTNAME = "172.25.180.202"  # 自分のサーバーのIPアドレス
+        HOSTNAME = "localhost"
         PORT = 10541
 
         # ipv4を使うので、AF_INET
@@ -138,7 +145,8 @@ class Application(tk.Tk):
 
     def disp_image(self):
         '''画像をCanvasに表示する'''
-
+        # print(self.Flick_Frag)
+        # if self.Flick_Flag:
         # フレーム画像の取得
         ret, frame = self.capture.read()
         frame = cv2.flip(frame, 1)
@@ -243,6 +251,7 @@ class Application(tk.Tk):
                             self.INPUT_TEXTS = self.INPUT_TEXTS[:-6]
                             self.INPUT_TEXTS_UI = self.INPUT_TEXTS_UI[:-6]
                             self.sock.send(bytes(self.entry1.get(), "utf-8"))
+
                         elif text == "×":
                             self.INPUT_TEXTS = u""
                             self.INPUT_TEXTS_UI = u""
@@ -321,7 +330,7 @@ class Application(tk.Tk):
                 for id_y in range(5):
                     if self.KEYBOARDLIST[id_x][id_y]:
                         cv2.rectangle(img2, (id_x * self.wVisal // 5 + self.spaceW, id_y * self.hVisal // 5), ((id_x + 1) *
-                                      self.wVisal // 5 + self.spaceW, (id_y + 1) * self.hVisal // 5), (102, 102, 255), thickness=-1)
+                                                                                                                self.wVisal // 5 + self.spaceW, (id_y + 1) * self.hVisal // 5), (102, 102, 255), thickness=-1)
 
             # 文字 #9999FF
             for id_x in range(1, 5):
@@ -380,6 +389,9 @@ class Application(tk.Tk):
 
         # disp_image()を10msec後に実行する
         self.disp_id = self.after(10, self.disp_image)
+        # else:
+        #     # TODO:検索結果を表示する
+        #     pass
 
 
 if __name__ == "__main__":

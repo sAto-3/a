@@ -1,7 +1,4 @@
-from numpy.lib.function_base import percentile
 import pandas
-from pandas.core.frame import DataFrame
-
 Data_File = "a\HandTracking\Data\dataset_20211201-1.csv"
 
 Data_Frame = pandas.read_csv(Data_File)
@@ -18,7 +15,7 @@ pandas.set_option('display.max_rows', None)
 
 Search_Word = '吾輩は'
 Search_Index = 1
-Sort_Index=10
+Sort_Index = 10
 
 # print(Data_Frame.isnull().sum())
 
