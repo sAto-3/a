@@ -10,51 +10,52 @@ import socket
 
 import cv2
 import numpy as np
+from numpy.core.numeric import full
 import pyautogui
 import pykakasi
 from PIL import Image, ImageOps, ImageTk  # 画像データ用
 
 import handtrackingModule as htm
-from module import cv2_putText_5
+from module import cv2_putText_4, cv2_putText_5, cv2_putText_6
 
 KEYBOARD_HIRA = [
-    [["return", " ", " ", " ", " "], ["forward", " ", " ", " ", " "], ["←", " ", " ", " ", " "], ["→", " ", " ", " ", " "], ["delete", "×", " ", " ", " "]],
+    [["return", " ", " ", " ", " "], ["forward", " ", " ", " ", " "], ["矢印", "←", "↑", "↓", "→"], ["→", " ", " ", " ", " "], ["delete", "×", " ", " ", " "]],
     [["カナ", " ", " ", " ", " "], ["あ", "い", "う", "え", "お"], ["か", "き", "く", "け", "こ"], ["さ", "し", "す", "せ", "そ"], ["BS", " ", " ", " ", " "]],
     [["英", " ", " ", " ", " "], ["た", "ち", "つ", "て", "と"], ["な", "に", "ぬ", "ね", "の"], ["は", "ひ", "ふ", "へ", "ほ"], ["変換", " ", " ", " ", " "], ],
     [["012", " ", " ", " ", " "], ["ま", "み", "む", "め", "も"], ["や", "「", "ゆ", "」", "よ"], ["ら", "り", "る", "れ", "ろ"], ["space", " ", " ", " ", " "], ],
     [["Quit", " ", " ", " ", " "], ["-", " ", " ", " ", " "],  ["わ", "を", "ん", " ", " "],  ["゛", " ", " ", " ", " "], ["Input", "Enter", "search", " ", " "]], ]
 KEYBOARD_HIRA_1 = [
-    [["return", " ", " ", " ", " "], ["forward", " ", " ", " ", " "], ["←", " ", " ", " ", " "], ["→", " ", " ", " ", " "], ["delete", "×", " ", " ", " "]],
+    [["return", " ", " ", " ", " "], ["forward", " ", " ", " ", " "], ["矢印", "←", "↑", "↓", "→"], ["→", " ", " ", " ", " "], ["delete", "×", " ", " ", " "]],
     [["カナ", " ", " ", " ", " "], ["ぁ", "ぃ", "ぅ", "ぇ", "ぉ"], ["が", "ぎ", "ぐ", "げ", "ご"], ["ざ", "じ", "ず", "ぜ", "ぞ"], ["BS", " ", " ", " ", " "]],
     [["英", " ", " ", " ", " "], ["だ", "ぢ", "づ", "で", "ど"], [" ", " ", " ", " ", " "], ["ば", "び", "ぶ", "べ", "ぼ"], ["変換", " ", " ", " ", " "], ],
     [["012", " ", " ", " ", " "], ["ぱ", "ぴ", "ぷ", "ぺ", "ぽ"], ["ゃ", " ", "ゅ", " ", "ょ"], [" ", " ", " ", " ", " "], ["space", " ", " ", " ", " "], ],
     [["Quit", " ", " ", " ", " "], ["-", " ", " ", " ", " "],  [" ", " ", " ", " ", " "],  ["゛", " ", " ", " ", " "], ["Input", "Enter", "search", " ", " "]], ]
 KEYBOARD_KATA = [
-    [["return", " ", " ", " ", " "], ["forward", " ", " ", " ", " "], ["←", " ", " ", " ", " "], ["→", " ", " ", " ", " "], ["delete", "×", " ", " ", " "]],
+    [["return", " ", " ", " ", " "], ["forward", " ", " ", " ", " "], ["矢印", "←", "↑", "↓", "→"], [" ", " ", " ", " ", " "], ["delete", "×", " ", " ", " "]],
     [["かな", " ", " ", " ", " "], ["ア", "イ", "ウ", "エ", "オ"], ["カ", "キ", "ク", "ケ", "コ"], ["サ", "シ", "ス", "セ", "ソ"], ["BS", " ", " ", " ", " "]],
     [["英", " ", " ", " ", " "], ["タ", "チ", "ツ", "テ", "ト"], ["ナ", "二", "ヌ", "ネ", "ノ"], ["ハ", "ヒ", "フ", "へ", "ホ"], ["変換", " ", " ", " ", " "], ],
     [["012", " ", " ", " ", " "], ["マ", "ミ", "ム", "メ", "モ"], ["ヤ", "「", "ユ", "」", "ヨ"], ["ラ", "リ", "ル", "レ", "ロ"], ["space", " ", " ", " ", " "], ],
     [["Quit", " ", " ", " ", " "], ["-", " ", " ", " ", " "], ["ワ", "ヲ", "ン", " ", " "], ["゛", " ", " ", " ", " "], ["Input", "Enter", "search", " ", " "]], ]
 KEYBOARD_KATA_1 = [
-    [["return", " ", " ", " ", " "], ["forward", " ", " ", " ", " "], ["←", " ", " ", " ", " "], ["→", " ", " ", " ", " "], ["delete", "×", " ", " ", " "]],
+    [["return", " ", " ", " ", " "], ["forward", " ", " ", " ", " "], ["矢印", "←", "↑", "↓", "→"], [" ", " ", " ", " ", " "], ["delete", "×", " ", " ", " "]],
     [["かな", " ", " ", " ", " "], ["ァ", "ィ", "ゥ", "ェ", "ォ"], ["ガ", "ギ", "グ", "ゲ", "ゴ"], ["ザ", "ジ", "ズ", "ゼ", "ゾ"], ["BS", " ", " ", " ", " "]],
     [["英", " ", " ", " ", " "], ["ダ", "ヂ", "ズ", "デ", "ド"], [" ", " ", " ", " ", " "], ["バ", "ビ", "ブ", "ベ", "ボ"], ["変換", " ", " ", " ", " "], ],
     [["012", " ", " ", " ", " "], ["パ", "ピ", "プ", "ペ", "ポ"], ["ャ", " ", "ュ", " ", "ョ"], [" ", " ", " ", " ", " "], ["space", " ", " ", " ", " "], ],
     [["Quit", " ", " ", " ", " "], ["-", " ", " ", " ", " "], [" ", " ", " ", " ", " "], ["゛", " ", " ", " ", " "], ["Input", "Enter", "search", " ", " "]], ]
 KEYBOARD_ENGLISH_SM = [
-    [["return", " ", " ", " ", " "], ["forward", " ", " ", " ", " "], ["←", " ", " ", " ", " "], ["→", " ", " ", " ", " "], ["delete", "×", " ", " ", " "]],
+    [["return", " ", " ", " ", " "], ["forward", " ", " ", " ", " "], ["矢印", "←", "↑", "↓", "→"], [" ", " ", " ", " ", " "], ["delete", "×", " ", " ", " "]],
     [["A/a", " ", " ", " ", " "], ["a", "b", "c", " ", " "], ["d", "e", "f", " ", " "], ["g", "h", "i", " ", " "], ["BS", " ", " ", " ", " "]],
     [["かな", " ", " ", " ", " "], ["j", "k", "l", " ", " "], ["m", "n", "o", " ", " "], ["p", "q", "r", "s", " "], [" ", " ", " ", " ", " "], ],
     [["012", " ", " ", " ", " "], ["t", "u", "v", " ", " "], ["w", "x", "y", "z", " "], [" ", " ", " ", " ", " "], ["space", " ", " ", " ", " "], ],
     [["Quit", " ", " ", " ", " "], ["-", "_", " ", " ", " "], [" ", " ", " ", " ", " "], [" ", " ", " ", " ", " "], ["Input", "Enter", "search", " ", " "]], ]
 KEYBOARD_ENGLISH_BI = [
-    [["return", " ", " ", " ", " "], ["forward", " ", " ", " ", " "], ["←", " ", " ", " ", " "], [" ", " ", " ", " ", " "], ["delete", "×", " ", " ", " "]],
+    [["return", " ", " ", " ", " "], ["forward", " ", " ", " ", " "], ["矢印", "←", "↑", "↓", "→"], [" ", " ", " ", " ", " "], ["delete", "×", " ", " ", " "]],
     [["A/a", " ", " ", " ", " "], ["A", "B", "C", " ", " "], ["D", "E", "F", " ", " "], ["G", "H", "I", " ", " "], [" ", " ", " ", " ", " "]],
     [["かな", " ", " ", " ", " "], ["J", "K", "L", " ", " "], ["M", "N", "O", " ", " "], ["P", "Q", "R", "S", " "], [" ", " ", " ", " ", " "], ],
     [["012", " ", " ", " ", " "], ["T", "U", "V", " ", " "], ["W", "X", "Y", "Z", " "], [" ", " ", " ", " ", " "], ["space", " ", " ", " ", " "], ],
     [["Quit", " ", " ", " ", " "], [" ", " ", " ", " ", " "],  [" ", " ", " ", " ", " "],  [" ", " ", " ", " ", " "], ["Input", "Enter", "search", " ", " "]], ]
 KEYBOARD_NUMPER = [
-    [["return", " ", " ", " ", " "], ["forward", " ", " ", " ", " "], ["←", " ", " ", " ", " "], ["→", " ", " ", " ", " "], ["delete", "×", " ", " ", " "]],
+    [["return", " ", " ", " ", " "], ["forward", " ", " ", " ", " "], ["矢印", "←", "↑", "↓", "→"], [" ", " ", " ", " ", " "], ["delete", "×", " ", " ", " "]],
     [["かな", " ", " ", " ", " "], ["1", " ", " ", " ", " "], ["2", " ", " ", " ", " "], ["3", " ", " ", " ", " "], ["BS", " ", " ", " ", " "]],
     [["英", " ", " ", " ", " "], ["4", " ", " ", " ", " "], ["5", " ", " ", " ", " "], ["6", " ", " ", " ", " "], ["変換", " ", " ", " ", " "], ],
     [["", " ", " ", " ", " "], ["7", " ", " ", " ", " "], ["8", " ", " ", " ", " "], ["9", " ", " ", " ", " "], ["space", " ", " ", " ", " "], ],
@@ -66,7 +67,7 @@ class Application(tk.Frame):
         super().__init__(master)
         self.pack()
         # self.wRoot, self.hRoot = 390, 400
-        self.wRoot, self.hRoot = 800, 800
+        self.wRoot, self.hRoot = 800, 600
         self.master.title(u"OpenCVの動画表示")       # ウィンドウタイトル
         self.master.geometry("{0}x{1}".format(self.wRoot, self.hRoot))     # ウィンドウサイズ(幅x高さ)
 
@@ -110,8 +111,7 @@ class Application(tk.Frame):
         # 初期キーボードはかな入力に
         self.KEYBOARD = KEYBOARD_HIRA
 
-        self.Flick_Flag = True
-        self.Search_Flag = False
+        self.EVENT_Flag = 0
 
     def canvas_click(self, event):
         '''Canvasのマウスクリックイベント'''
@@ -136,6 +136,7 @@ class Application(tk.Frame):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect((HOSTNAME, PORT))
         # self.sock=sock
+        print(self.sock.recv(1024))
 
     def disp_image(self):
         '''画像をCanvasに表示する'''
@@ -151,22 +152,15 @@ class Application(tk.Frame):
         hand += 1
         img2 = np.full((self.hCam, self.wCam, 3), 255, dtype=np.uint8)
 
-        # if 手が認識した
-        # 認識したら
-        # ・ボリューム操作
-        # ・マウス操作
-        # ・文字入力操作
-        # をする
-        if self.Flick_Flag:
-            if len(lmlist) != 0:
+        if len(lmlist) != 0:
+            checkedList = self.detector.checkFinger()
+            if self.EVENT_Flag == 0:
                 # 指をおろしている判定を取得
-                checkedList = self.detector.checkFinger()
                 # フリック入力
                 # self.KEYBOARDLIST
                 # KEYBOARDは初期位置+50音の位置
                 # 実行
                 # 親指を伸ばしたら選択状態になる
-
                 if hand == 2:
                     if checkedList[1] == [1, 1, 1, 1, 1]:
                         # 最初は位置を記憶して判別する
@@ -229,7 +223,7 @@ class Application(tk.Frame):
                                     self.INPUT_TEXTS_UI = self.INPUT_TEXTS_UI[:-1]
                             elif text == "space":
                                 self.INPUT_TEXTS = self.INPUT_TEXTS[:-5]
-                                self.INPUT_TEXTS_UI = self.INPUT_TEXTS_UI[-5]
+                                self.INPUT_TEXTS_UI = self.INPUT_TEXTS_UI[:-5]
                                 self.INPUT_TEXTS += "　"
                                 self.INPUT_TEXTS_UI += "　"
                             elif text == "Enter":
@@ -251,10 +245,10 @@ class Application(tk.Frame):
                             elif text == "search":
                                 self.INPUT_TEXTS = self.INPUT_TEXTS[:-6]
                                 self.INPUT_TEXTS_UI = self.INPUT_TEXTS_UI[:-6]
+                                self.search_text = self.entry1.get()
                                 self.sock.send(bytes(self.entry1.get(), "utf-8"))
 
-                                self.Flick_Flag = False
-                                self.Search_Flag = True
+                                self.EVENT_Flag = 1
 
                             elif text == "×":
                                 self.INPUT_TEXTS = u""
@@ -369,43 +363,88 @@ class Application(tk.Frame):
                     else:
                         cv2.circle(img2, (int(lmlist[0][8][1]), int(lmlist[0][8][2])), 3, (0, 255, 0), cv2.FILLED)
 
-            # BGR→RGB変換
-            cv_image = cv2.cvtColor(img2, cv2.COLOR_BGR2RGB)
-            # NumPyのndarrayからPillowのImageへ変換
-            pil_image = Image.fromarray(cv_image)
+            if self.EVENT_Flag == 1:
+                # ボタンを隠す
+                # データの受信
+                img2 = np.full((self.hCam, self.wCam, 3), 255, dtype=np.uint8)
+                print("Search_Mode")
+                self.result_data = b""
+                time = 0
+                times = int(self.sock.recv(1024).decode("utf-8"))
+                print("==受信開始==")
+                while True:
+                    data = self.sock.recv(1024)
+                    if len(data) <= 0:
+                        break
+                    self.result_data += data
+                    time += len(data)
+                    print("\r {:.2f} %".format(time/times*100), end="        ")
+                    if time >= times:
+                        break
+                    # print(data)
+                print("==受信終了==")
+                self.EVENT_Flag = 2
+                # データの表示
+                print(self.result_data)
+                self.result_data = pickle.loads(self.result_data)
+                print(self.result_data)
 
-            # キャンバスのサイズを取得
-            canvas_width = self.canvas.winfo_width()
-            canvas_height = self.canvas.winfo_height()
+            if self.EVENT_Flag == 2:
+                # モードの切替
+                if hand == 2:
+                    if checkedList[1] == [1, 1, 1, 1, 1] and (self.wCam//15 <= lmlist[0][8][1] < self.wCam//15*2) and (self.hCam//20 <= lmlist[0][8][2] < self.hCam//20*2):
+                        # 戻るボタン
+                        self.EVENT_Flag == 0
 
-            # 画像のアスペクト比（縦横比）を崩さずに指定したサイズ（キャンバスのサイズ）全体に画像をリサイズする
-            pil_image = ImageOps.pad(pil_image, (canvas_width, canvas_height))
+                # frick_x1, frick_y1 = lmlist[0][8][1], lmlist[0][8][2]
+                # UIの設定
+                # ポインタ
+                for i in range(hand):
+                    if lmlist[i][0][4]:
+                        cv2.circle(img, (lmlist[i][0][1], lmlist[i][0][2]), 3, (0, 0, 255), cv2.FILLED)
+                    else:
+                        cv2.circle(img, (lmlist[i][0][1], lmlist[i][0][2]), 3, (0, 255, 0), cv2.FILLED)
+                    cv2.circle(img, (int(lmlist[0][8][1]), int(lmlist[0][8][2])), 3, (0, 0, 255), cv2.FILLED)
+                    cv2.circle(img2, (int(lmlist[0][8][1]), int(lmlist[0][8][2])), 4, (0, 0, 0), cv2.FILLED)
+                if hand == 2:
+                    if checkedList[1] == [1, 1, 1, 1, 1]:
+                        cv2.circle(img2, (int(lmlist[0][8][1]), int(lmlist[0][8][2])), 3, (0, 0, 255), cv2.FILLED)
+                    else:
+                        cv2.circle(img2, (int(lmlist[0][8][1]), int(lmlist[0][8][2])), 3, (0, 255, 0), cv2.FILLED)
+                # 検索結果Text
+                cv2_putText_6(img2, "「{}」の検索結果 {}件".format(self.search_text, len(self.result_data)), (self.wCam//50*12, self.hCam//50), self.font_Path, 40, (30, 30, 30))
+                # 検索結果UI
+                cv2.rectangle(img2, (self.wCam//100, self.hCam//100*12), (self.wCam//100*98, self.hCam//100*96), (150, 150, 150), 2)
+                # cv2.rectangle(img2, (self.wCam//100*1, self.hCam//100*13), (self.wCam//100*97, self.hCam//100*95), (172, 172, 172), cv2.FILLED)
 
-            # PIL.ImageからPhotoImageへ変換する
-            self.photo_image = ImageTk.PhotoImage(image=pil_image)
+                # 戻るボタン
+                cv2_putText_5(img2, "戻る", (int(self.wCam//50*11/2), int(self.hCam//50*3)), self.font_Path, 10, (127, 127, 127))
+                cv2.rectangle(img2, (self.wCam//50, self.hCam//50), (self.wCam//50*10, self.hCam//50*5), (125, 125, 125), 1)
 
-            # 画像の描画
-            self.canvas.create_image(
-                canvas_width / 2,       # 画像表示位置(Canvasの中心)
-                canvas_height / 2,
-                image=self.photo_image  # 表示画像データ
-            )
+        # BGR→RGB変換
+        cv_image = cv2.cvtColor(img2, cv2.COLOR_BGR2RGB)
+        # NumPyのndarrayからPillowのImageへ変換
+        pil_image = Image.fromarray(cv_image)
 
-            # disp_image()を10msec後に実行する
-            self.disp_id = self.after(10, self.disp_image)
+        # キャンバスのサイズを取得
+        canvas_width = self.canvas.winfo_width()
+        canvas_height = self.canvas.winfo_height()
 
-        if self.Search_Flag:
-            # データの受信
-            fulldata=b""
-            while True:
-                data=self.sock.recv(1024)
-                if data =="":
-                    break
-                fulldata+=data
-            print(fulldata)
-            print(pickle.loads(fulldata))
-            self.Flick_Flag = True
-            self.Search_Flag = False
+        # 画像のアスペクト比（縦横比）を崩さずに指定したサイズ（キャンバスのサイズ）全体に画像をリサイズする
+        pil_image = ImageOps.pad(pil_image, (canvas_width, canvas_height))
+
+        # PIL.ImageからPhotoImageへ変換する
+        self.photo_image = ImageTk.PhotoImage(image=pil_image)
+
+        # 画像の描画
+        self.canvas.create_image(
+            canvas_width / 2,       # 画像表示位置(Canvasの中心)
+            canvas_height / 2,
+            image=self.photo_image  # 表示画像データ
+        )
+
+        # disp_image()を10msec後に実行する
+        self.disp_id = self.after(5, self.disp_image)
 
 
 if __name__ == "__main__":
