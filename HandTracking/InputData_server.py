@@ -1,6 +1,8 @@
 import socket
 import pandas
 import pickle
+import sys
+
 # HOST_NAME = "0.0.0.0"  # ポート開放
 HOST_NAME = "localhost"
 PORT = 10541
