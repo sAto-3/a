@@ -1,6 +1,7 @@
-from os import access
+from os import access, execv
 import socket
 import threading
+from cv2 import RETR_LIST
 import pandas
 import pickle
 import sys
@@ -9,45 +10,56 @@ import sys
 def main_mortion(accept):
     Buffer_SIZE = 4096
     id = threading.get_ident()
-    while True:
-        # 検索ワードの受信
+    # 検索ワードの受信
+    try:
+        print("ワードの受信中")
+        rcv_data = accept.recv(Buffer_SIZE)
+    except InterruptedError as e:
+        print("recv:{}".format(e))
+
+    # 検索ワードの変換
+    rcv_data = rcv_data.decode("utf-8")
+    if len(rcv_data) == 0:
+        # EOFエラー
+        print("[{}]recv:EOF".format(id))
+
+    # 検索
+    print("検索")
+    Search_Word = rcv_data
+    # 種類を指定している場合
+    Search_Result = Data_Frame[Data_Frame[Data_Index[Search_Index]].str.contains(Search_Word)]
+    # 全部検索する場合
+    # Search_Result = Data_Frame[Data_Frame["タイトル"].str.contains(Search_Word)
+    #                            and Data_Frame["タイトル（ふりがな）"].str.contains((Search_Word))
+    #                            and Data_Frame["著者"].str.contains(Search_Word, case=False)
+    #                            and Data_Frame["出版社"].str.contains(Search_Word, case=False)
+    #                            and Data_Frame["出版社（ふりがな）"].str.contains(Search_Word, case=False)
+    #                            ]
+    # print(len(Search_Result))
+    if not Search_Result.empty:
+        # 送信
+        # データのサイズの送信
         try:
-            print("ワードの受信中")
-            rcv_data = accept.recv(Buffer_SIZE)
-        except InterruptedError as e:
-            print("recv:{}".format(e))
-
-        # 検索ワードの変換
-        rcv_data = rcv_data.decode("utf-8")
-        if len(rcv_data) == 0:
-            # EOFエラー
-            print("[{}]recv:EOF".format(id))
-
-        # 検索
-        print("検索")
-        Search_Word = rcv_data
-        # 種類を指定している場合
-        Search_Result = Data_Frame[Data_Frame[Data_Index[Search_Index]].str.contains(Search_Word)]
-        # 全部検索する場合
-        # Search_Result = Data_Frame[Data_Frame["タイトル"].str.contains(Search_Word)
-        #                            and Data_Frame["タイトル（ふりがな）"].str.contains((Search_Word))
-        #                            and Data_Frame["著者"].str.contains(Search_Word, case=False)
-        #                            and Data_Frame["出版社"].str.contains(Search_Word, case=False)
-        #                            and Data_Frame["出版社（ふりがな）"].str.contains(Search_Word, case=False)
-        #                            ]
-        # print(len(Search_Result))
-        if not Search_Result.empty:
-            # 送信
             print("送信")
             print("[ ]:{} datas matched.".format(len(Search_Result)))
             Search_Result_lens = pickle.dumps(Search_Result.values.tolist())
-            # client.send(bytes(str(len(Search_Result_lens)), "utf-8"))
-            print(Search_Result)
+            accept.send(bytes(str(len(Search_Result_lens)), "utf-8"))
+        except InterruptedError as e:
+            print(e)
+        # データの送信
+        try:
+            # print(Search_Result)
             accept.send(pickle.dumps(Search_Result.values.tolist()))
             print("[ ]:data was send.")
+        except InterruptedError as e:
+            print(e)
+    else:
+        accept.send(bytes("-1"), "utf-8")
+        accept.send(bytes("-1"), "utf-8")
 
-        print("[ ]:close client communication")
-        accept.close()
+
+    print("[ ]:close client communication")
+    accept.close()
 
 
 # HOST_NAME = "0.0.0.0"  # ポート開放
@@ -62,7 +74,9 @@ Sort_Index = 10
 
 # ソケット通信の準備
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+sock.settimeout(10)
 sock.bind((HOST_NAME, PORT))
+
 
 # csvファイルの準備
 Data_Frame = pandas.read_csv(Data_File)
@@ -74,8 +88,16 @@ print("[ ]:connecting....")
 # client.send('[○]:Connected!! :{}'.format(HOST_NAME).encode())
 
 while True:
+    print("開始")
     try:
         client, remote_address = sock.accept()
+    except socket.timeout:
+        # タイムアウト
+        print("recv:TIMEOUT")
+        sock.close()
+        break
+    
+    try:
         host_data = socket.gethostname()
         Client_Thread = threading.Thread(target=main_mortion, args=[client])
         Client_Thread.start()

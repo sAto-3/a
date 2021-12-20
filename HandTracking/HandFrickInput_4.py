@@ -6,6 +6,7 @@ import pickle
 import sys
 import tkinter
 import tkinter as tk
+# from tkinter import ttk as tk
 import socket
 
 import cv2
@@ -136,13 +137,13 @@ class Application(tk.Frame):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect((HOSTNAME, PORT))
         # self.sock=sock
-        print(self.sock.recv(1024))
 
     def disp_image(self):
         '''画像をCanvasに表示する'''
 
         # フレーム画像の取得
         ret, frame = self.capture.read()
+
         frame = cv2.flip(frame, 1)
         # フレーム画像から操作画面を取得
         # 手を認識させる
@@ -176,7 +177,7 @@ class Application(tk.Frame):
                                         # print(ix,iy)
                             self.KEYBOARDREMEN = False
                             self.INPUT_FLAG = True
-                    # 親指を戻したら選択を確定してして初期化
+                    # 手を戻したら選択を確定してして初期化
                     else:
                         if self.INPUT_FLAG:
                             # 選択を確定して文字列に出力
@@ -246,9 +247,13 @@ class Application(tk.Frame):
                                 self.INPUT_TEXTS = self.INPUT_TEXTS[:-6]
                                 self.INPUT_TEXTS_UI = self.INPUT_TEXTS_UI[:-6]
                                 self.search_text = self.entry1.get()
-                                self.sock.send(bytes(self.entry1.get(), "utf-8"))
+                                if self.search_text == "":
+                                    print("中にはなにもない")
+                                    #TODO:表示をつける
+                                else:
+                                    self.sock.send(bytes(self.entry1.get(), "utf-8"))
 
-                                self.EVENT_Flag = 1
+                                    self.EVENT_Flag = 1
 
                             elif text == "×":
                                 self.INPUT_TEXTS = u""
@@ -370,31 +375,39 @@ class Application(tk.Frame):
                 print("Search_Mode")
                 self.result_data = b""
                 time = 0
+                # データの長さを取得
                 times = int(self.sock.recv(1024).decode("utf-8"))
-                print("==受信開始==")
-                while True:
-                    data = self.sock.recv(1024)
-                    if len(data) <= 0:
-                        break
-                    self.result_data += data
-                    time += len(data)
-                    print("\r {:.2f} %".format(time/times*100), end="        ")
-                    if time >= times:
-                        break
-                    # print(data)
-                print("==受信終了==")
+                print("{}bites".format(times))
+                # データ
+                if times == -1:
+                    # -1を受信
+                    self.result_data = int(self.sock.recv(1024).decode("utf-8"))
+
+                else:
+                    print("==受信開始==")
+                    while True:
+                        data = self.sock.recv(1024)
+                        if len(data) <= 0:
+                            break
+                        self.result_data += data
+                        time += len(data)
+                        print("\r {:.2f} %".format(time/times*100), end="        ")
+                        # print(data)
+                    print(self.result_data)
+                    self.result_data = pickle.loads(self.result_data)
+                    print("==受信終了==")
                 self.EVENT_Flag = 2
                 # データの表示
                 print(self.result_data)
-                self.result_data = pickle.loads(self.result_data)
-                print(self.result_data)
 
             if self.EVENT_Flag == 2:
+                #
                 # モードの切替
                 if hand == 2:
-                    if checkedList[1] == [1, 1, 1, 1, 1] and (self.wCam//15 <= lmlist[0][8][1] < self.wCam//15*2) and (self.hCam//20 <= lmlist[0][8][2] < self.hCam//20*2):
+                    # (self.wCam//50, self.hCam//50), (self.wCam//50*10, self.hCam//50*5)
+                    if checkedList[1] == [1, 1, 1, 1, 1] and (self.wCam//50 <= lmlist[0][8][1] < self.wCam//50*10) and (self.hCam//50 <= lmlist[0][8][2] < self.hCam//50*5):
                         # 戻るボタン
-                        self.EVENT_Flag == 0
+                        self.EVENT_Flag = 0
 
                 # frick_x1, frick_y1 = lmlist[0][8][1], lmlist[0][8][2]
                 # UIの設定
@@ -411,14 +424,18 @@ class Application(tk.Frame):
                         cv2.circle(img2, (int(lmlist[0][8][1]), int(lmlist[0][8][2])), 3, (0, 0, 255), cv2.FILLED)
                     else:
                         cv2.circle(img2, (int(lmlist[0][8][1]), int(lmlist[0][8][2])), 3, (0, 255, 0), cv2.FILLED)
-                # 検索結果Text
-                cv2_putText_6(img2, "「{}」の検索結果 {}件".format(self.search_text, len(self.result_data)), (self.wCam//50*12, self.hCam//50), self.font_Path, 40, (30, 30, 30))
-                # 検索結果UI
-                cv2.rectangle(img2, (self.wCam//100, self.hCam//100*12), (self.wCam//100*98, self.hCam//100*96), (150, 150, 150), 2)
-                # cv2.rectangle(img2, (self.wCam//100*1, self.hCam//100*13), (self.wCam//100*97, self.hCam//100*95), (172, 172, 172), cv2.FILLED)
+                # -1が帰ってきたら
+                if self.result_data == -1:
+                    cv2_putText_5(img2, "検索できませんでした\nError:{}".format(self.result_data))
+                else:
+                    # 検索結果Text
+                    cv2_putText_6(img2, "「{}」の検索結果 {}件".format(self.search_text, len(self.result_data)), (self.wCam//50*12, self.hCam//50), self.font_Path, 40, (30, 30, 30))
+                    # 検索結果UI
+                    cv2.rectangle(img2, (self.wCam//100, self.hCam//100*12), (self.wCam//100*98, self.hCam//100*96), (150, 150, 150), 2)
+                    # cv2.rectangle(img2, (self.wCam//100*1, self.hCam//100*13), (self.wCam//100*97, self.hCam//100*95), (172, 172, 172), cv2.FILLED)
 
                 # 戻るボタン
-                cv2_putText_5(img2, "戻る", (int(self.wCam//50*11/2), int(self.hCam//50*3)), self.font_Path, 10, (127, 127, 127))
+                cv2_putText_5(img2, "戻る", (int(self.wCam//50*11/2), int(self.hCam//50*3)), self.font_Path, 20, (127, 127, 127))
                 cv2.rectangle(img2, (self.wCam//50, self.hCam//50), (self.wCam//50*10, self.hCam//50*5), (125, 125, 125), 1)
 
         # BGR→RGB変換

@@ -42,11 +42,6 @@ while True:
 
     # 検索
     print("検索")
-    if rcv_data == "":
-        # 空状態だと検索に時間がかかるため、エラー値を返す
-        client.send(0)
-        client.send(pickle.dumps(-1))
-        continue
     Search_Word = rcv_data
     # 種類を指定している場合
     Search_Result = Data_Frame[Data_Frame[Data_Index[Search_Index]].str.contains(Search_Word)]
@@ -63,11 +58,13 @@ while True:
         print("送信")
         print("[ ]:{} datas matched.".format(len(Search_Result)))
         Search_Result_lens = pickle.dumps(Search_Result.values.tolist())
-        # client.send(bytes(str(len(Search_Result_lens)), "utf-8"))
+        client.send(bytes(str(len(Search_Result_lens)), "utf-8"))
         print(Search_Result)
         client.send(pickle.dumps(Search_Result.values.tolist()))
         print("[ ]:data was send.")
-
+    else:
+        client.send(bytes("-1",encoding="utf-8"))
+        client.send(bytes("-1",encoding="utf-8"))
     print("[ ]:close client communication")
     client.close()
 sock.close()
