@@ -17,7 +17,7 @@ import pykakasi
 from PIL import Image, ImageOps, ImageTk  # 画像データ用
 
 import handtrackingModule as htm
-from module import cv2_putText_4, cv2_putText_5, cv2_putText_6
+from module import cv2_putText_4, cv2_putText_5, cv2_putText_6, get_east_asian_width_count
 
 KEYBOARD_HIRA = [
     [["return", " ", " ", " ", " "], ["forward", " ", " ", " ", " "], ["矢印", "←", "↑", "↓", "→"], ["→", " ", " ", " ", " "], ["delete", "×", " ", " ", " "]],
@@ -113,6 +113,9 @@ class Application(tk.Frame):
         self.KEYBOARD = KEYBOARD_HIRA
 
         self.EVENT_Flag = 0
+        self.search_text = ""
+
+        self.Dict_num = 0
 
     def canvas_click(self, event):
         '''Canvasのマウスクリックイベント'''
@@ -162,6 +165,15 @@ class Application(tk.Frame):
                 # KEYBOARDは初期位置+50音の位置
                 # 実行
                 # 親指を伸ばしたら選択状態になる
+
+                # Textboxを有効にする
+                if not self.entry1.winfo_exists():
+                    print("textbox復元")
+                    self.entry1 = tkinter.Entry(self.master, font=("", 20))
+                    self.entry1.insert(0, self.search_text)
+                    self.entry1.focus_set()
+                    self.entry1.pack()
+
                 if hand == 2:
                     if checkedList[1] == [1, 1, 1, 1, 1]:
                         # 最初は位置を記憶して判別する
@@ -249,8 +261,9 @@ class Application(tk.Frame):
                                 self.search_text = self.entry1.get()
                                 if self.search_text == "":
                                     print("中にはなにもない")
-                                    #TODO:表示をつける
+                                    # TODO:表示をつける
                                 else:
+                                    self.server_connect()
                                     self.sock.send(bytes(self.entry1.get(), "utf-8"))
 
                                     self.EVENT_Flag = 1
@@ -316,6 +329,14 @@ class Application(tk.Frame):
                                 self.INPUT_TEXTS = self.INPUT_TEXTS[:-1]
                                 self.INPUT_TEXTS_UI = self.INPUT_TEXTS_UI[:-1]
                                 pyautogui.press("right")
+                            elif text == "↑":
+                                self.INPUT_TEXTS = self.INPUT_TEXTS[:-1]
+                                self.INPUT_TEXTS_UI = self.INPUT_TEXTS_UI[:-1]
+                                pyautogui.press("up")
+                            elif text == "↓":
+                                self.INPUT_TEXTS = self.INPUT_TEXTS[:-1]
+                                self.INPUT_TEXTS_UI = self.INPUT_TEXTS_UI[:-1]
+                                pyautogui.press("down")
                         # 初期化
                         self.KEYBOARDLIST = np.full((5, 5), False).tolist()
                         self.KEYBOARDREMEN = True
@@ -370,19 +391,18 @@ class Application(tk.Frame):
 
             if self.EVENT_Flag == 1:
                 # ボタンを隠す
-                # データの受信
+                # データの受信 TODO:並列化threadingして画面を表示させる
                 img2 = np.full((self.hCam, self.wCam, 3), 255, dtype=np.uint8)
                 print("Search_Mode")
                 self.result_data = b""
                 time = 0
                 # データの長さを取得
-                times = int(self.sock.recv(1024).decode("utf-8"))
-                print("{}bites".format(times))
+                self.Num_books = int(self.sock.recv(1024).decode("utf-8"))
+                print("{}bites".format(self.Num_books))
                 # データ
-                if times == -1:
+                if self.Num_books == -1:
                     # -1を受信
                     self.result_data = int(self.sock.recv(1024).decode("utf-8"))
-
                 else:
                     print("==受信開始==")
                     while True:
@@ -391,24 +411,34 @@ class Application(tk.Frame):
                             break
                         self.result_data += data
                         time += len(data)
-                        print("\r {:.2f} %".format(time/times*100), end="        ")
+                        print("\r {:.2f} %".format(time/self.Num_books*100), end="        ")
                         # print(data)
-                    print(self.result_data)
+                    # print(self.result_data)
                     self.result_data = pickle.loads(self.result_data)
                     print("==受信終了==")
+                # TODO:UI処理
                 self.EVENT_Flag = 2
                 # データの表示
-                print(self.result_data)
+                # print(self.result_data)
 
+            # 結果表示画面
             if self.EVENT_Flag == 2:
-                #
+                # Textboxを隠す
+                if self.entry1.winfo_exists():
+                    self.entry1.pack_forget()
+                    self.entry1.destroy()
+                    self.master.geometry("{0}x{1}".format(self.wRoot, self.hRoot))     # ウィンドウサイズ(幅x高さ)
+                    self.canvas.pack(expand=1, fill=tk.BOTH)
+
                 # モードの切替
                 if hand == 2:
                     # (self.wCam//50, self.hCam//50), (self.wCam//50*10, self.hCam//50*5)
                     if checkedList[1] == [1, 1, 1, 1, 1] and (self.wCam//50 <= lmlist[0][8][1] < self.wCam//50*10) and (self.hCam//50 <= lmlist[0][8][2] < self.hCam//50*5):
                         # 戻るボタン
                         self.EVENT_Flag = 0
-
+                    # if checkedList[1] == [1, 1, 1, 1, 1]:
+                    #     # 詳細画面に移行
+                    #     pass
                 # frick_x1, frick_y1 = lmlist[0][8][1], lmlist[0][8][2]
                 # UIの設定
                 # ポインタ
@@ -424,19 +454,51 @@ class Application(tk.Frame):
                         cv2.circle(img2, (int(lmlist[0][8][1]), int(lmlist[0][8][2])), 3, (0, 0, 255), cv2.FILLED)
                     else:
                         cv2.circle(img2, (int(lmlist[0][8][1]), int(lmlist[0][8][2])), 3, (0, 255, 0), cv2.FILLED)
-                # -1が帰ってきたら
+                # 検索結果がなかった(-1が帰ってくる)とき
                 if self.result_data == -1:
-                    cv2_putText_5(img2, "検索できませんでした\nError:{}".format(self.result_data))
+                    cv2_putText_5(img2, "キーワードと一致する結果がございません\nキーワードを変えてお試しください", (self.wCam//2, self.hCam//2), self.font_Path, 30, (50, 50, 50))
                 else:
+                    # 検索結果を表示
+                    # print("表示")
                     # 検索結果Text
                     cv2_putText_6(img2, "「{}」の検索結果 {}件".format(self.search_text, len(self.result_data)), (self.wCam//50*12, self.hCam//50), self.font_Path, 40, (30, 30, 30))
                     # 検索結果UI
-                    cv2.rectangle(img2, (self.wCam//100, self.hCam//100*12), (self.wCam//100*98, self.hCam//100*96), (150, 150, 150), 2)
                     # cv2.rectangle(img2, (self.wCam//100*1, self.hCam//100*13), (self.wCam//100*97, self.hCam//100*95), (172, 172, 172), cv2.FILLED)
 
+                    # (self.wCam//100, self.hCam//100*12)
+                    # 本の情報を表示する
+                    # font:30?
+                    # TODO:
+                    books = 15
+                    font = 20
+                    space = 10
+                    header_space = 50
+                    cv2.rectangle(img2, (self.wCam//100, self.hCam//100*12), (self.wCam//100*98, self.hCam//100*12+header_space+(font+space)*(books+1)), (150, 150, 150), 2)
+                    cv2_putText_6(img2, "{:3}|{:20}|{:10}".format("No", "タイトル", "著者"), (self.wCam//100+3, self.hCam//100*12 + header_space-font-space), self.font_Path, font, (100, 100, 100))
+                    print(min((self.Dict_num+1)*books, self.Num_books), len(self.result_data))
+                    for i in range(self.Dict_num*books, min((self.Dict_num+1)*books, len(self.result_data))):
+                        # print("{0}|{1}…|{2}…".format(i+1, self.result_data[i][1][:20], self.result_data[i][6][:15]))
+                        cv2_putText_6(img2, "{:3}|{:20}…|{:10}…".format(i+1, self.result_data[i][1], self.result_data[i][6]),
+                                      (self.wCam//100+3, self.hCam//100*12 + header_space+(font+space)*i), self.font_Path, font, (50, 50, 50))
+
+                        # 線
+                        cv2.line(img2, (self.wCam//100, self.hCam//100*12 + header_space + (font+space)*i-space//2),
+                                 (self.wCam//100*98, self.hCam//100*12 + header_space + (font+space)*i-space//2), (100, 100, 100), 1)
+                    # 線
+                    cv2.line(img2, (self.wCam//100, self.hCam+header_space), (self.wCam//100*98, self.hCam+header_space), (100, 100, 100), 3)
+                    cv2.line(img2, (self.wCam//100, self.hCam//100*12+header_space+(font+space)*books), (self.wCam//100*98, self.hCam//100*12+header_space+(font+space)*books), (100, 100, 100), 2)
+                # ページ送りボタン
+                cv2.rectangle(img2, (self.wCam//100*30, self.hCam//100*90), (self.wCam//100*45, self.hCam//100*98), (175, 40, 40), 2)
+                # ページ戻りボタン
+                cv2.rectangle(img2, (self.wCam//100*55, self.hCam//100*90), (self.wCam//100*70, self.hCam//100*98), (175, 40, 40), 2)
                 # 戻るボタン
                 cv2_putText_5(img2, "戻る", (int(self.wCam//50*11/2), int(self.hCam//50*3)), self.font_Path, 20, (127, 127, 127))
                 cv2.rectangle(img2, (self.wCam//50, self.hCam//50), (self.wCam//50*10, self.hCam//50*5), (125, 125, 125), 1)
+
+            # 詳細画面表示
+            if self.EVENT_Flag == 3:
+
+                pass
 
         # BGR→RGB変換
         cv_image = cv2.cvtColor(img2, cv2.COLOR_BGR2RGB)

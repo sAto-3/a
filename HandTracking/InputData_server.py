@@ -56,12 +56,13 @@ while True:
     if not Search_Result.empty:
         # 送信
         print("送信")
-        print("[ ]:{} datas matched.".format(len(Search_Result)))
-        Search_Result_lens = pickle.dumps(Search_Result.values.tolist())
-        client.send(bytes(str(len(Search_Result_lens)), "utf-8"))
-        print(Search_Result)
-        client.send(pickle.dumps(Search_Result.values.tolist()))
-        print("[ ]:data was send.")
+        print("[ ]:{0} datas matched.".format(len(Search_Result)))
+        Search_Result = pickle.dumps(Search_Result.values.tolist())
+        Search_Result_lens=len(Search_Result)
+        client.send(bytes(str(Search_Result_lens), "utf-8"))
+        # print(Search_Result)
+        client.send(Search_Result)
+        print("[ ]:{0} data was send.".format(Search_Result_lens))
     else:
         client.send(bytes("-1",encoding="utf-8"))
         client.send(bytes("-1",encoding="utf-8"))
