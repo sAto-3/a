@@ -1,8 +1,6 @@
 # TODO:
 # ・reterun forward機能追加：文字の入力の取り消しや進める機能
 
-from ctypes import addressof
-from ctypes.wintypes import WCHAR
 import pickle
 import sys
 import tkinter
@@ -12,14 +10,13 @@ import socket
 
 import cv2
 import numpy as np
-from numpy.core.numeric import full
-from numpy.lib.twodim_base import triu_indices_from
 import pyautogui
 import pykakasi
 from PIL import Image, ImageOps, ImageTk  # 画像データ用
+import threading
 
 import handtrackingModule as htm
-from module import cv2_putText_4, cv2_putText_5, cv2_putText_6, get_east_asian_width_count
+from module import cv2_putText_4, cv2_putText_5, cv2_putText_6
 
 KEYBOARD_HIRA = [
     [["return", " ", " ", " ", " "], ["forward", " ", " ", " ", " "], ["矢印", "←", "↑", "↓", "→"], ["→", " ", " ", " ", " "], ["delete", "×", " ", " ", " "]],
@@ -110,8 +107,10 @@ class Application(tk.Frame):
         self.xx, self.yy = 0, 0
         self.INPUT_FLAG = False
         self.font_size = 50
-        self.font_Path = "C:\Windows\Fonts\メイリオ\meiryo.ttc"
-        self.font_Path_Bold = "C:\Windows\Fonts\メイリオ\meiryob.ttc"
+        # self.font_Path = "C:\Windows\Fonts\メイリオ\meiryo.ttc"
+        # self.font_Path_Bold = "C:\Windows\Fonts\メイリオ\meiryob.ttc"
+        self.font_Path = "C:\Windows\Fonts\游ゴシック\YuGothR.ttc"
+        self.font_Path_Bold = "C:\Windows\Fonts\游ゴシック\YuGothB.ttc"
         # 初期キーボードはかな入力に
         self.KEYBOARD = KEYBOARD_HIRA
 
@@ -122,6 +121,11 @@ class Application(tk.Frame):
         self.Result_Button_pressed = [False]*4
         self.Detail_Button_pressed = [False]
         self.Books_num = -1
+
+        self.savedIMG_Result = []
+        self.savedIMG_Detail = []
+
+        self.Visiter = [False]*4
 
     def canvas_click(self, event):
         '''Canvasのマウスクリックイベント'''
@@ -149,10 +153,11 @@ class Application(tk.Frame):
 
     def disp_image(self):
         '''画像をCanvasに表示する'''
-
         # フレーム画像の取得
         ret, frame = self.capture.read()
-
+        if not ret:
+            print("画像が読み込まれなかった")
+            sys.exit()
         frame = cv2.flip(frame, 1)
         # フレーム画像から操作画面を取得
         # 手を認識させる
@@ -171,7 +176,8 @@ class Application(tk.Frame):
                 # KEYBOARDは初期位置+50音の位置
                 # 実行
                 # 親指を伸ばしたら選択状態になる
-
+                if not self.Visiter[0]:
+                    self.Visiter[0] = True
                 # Textboxを有効にする
                 if not self.entry1.winfo_exists():
                     print("textbox復元")
@@ -273,6 +279,7 @@ class Application(tk.Frame):
                                     self.sock.send(bytes(self.entry1.get(), "utf-8"))
 
                                     self.EVENT_Flag = 1
+                                    self.Visiter[0] = False
 
                             elif text == "×":
                                 self.INPUT_TEXTS = u""
@@ -399,6 +406,9 @@ class Application(tk.Frame):
 
             # データの受信処理
             elif self.EVENT_Flag == 1:
+                # Visiter処理
+                if not self.Visiter[1]:
+                    self.Visiter[1] = True
                 # ボタンを隠す
                 # データの受信 TODO:並列化threadingして画面を表示させる
                 img2 = np.full((self.hCam, self.wCam, 3), 255, dtype=np.uint8)
@@ -409,7 +419,7 @@ class Application(tk.Frame):
                 self.Num_books = int(self.sock.recv(1024).decode("utf-8"))
                 print("{}bites".format(self.Num_books))
                 # データ
-                if self.Num_books == -1:
+                if self.Num_books == 0:
                     # -1を受信
                     self.result_data = int(self.sock.recv(1024).decode("utf-8"))
                 else:
@@ -421,12 +431,15 @@ class Application(tk.Frame):
                         self.result_data += data
                         time += len(data)
                         print("\r {:.2f} %".format(time/self.Num_books*100), end="        ")
+                        # cv2_putText_5(img2, "{:.2f} % 完了".format(time/self.Num_books*100), (self.wCam//2, self.hCam//2), self.font_Path, 50, (100, 100, 100))
+
                         # print(data)
                     # print(self.result_data)
                     self.result_data = pickle.loads(self.result_data)
                     print("==受信終了==")
                 # TODO:UI処理
                 self.EVENT_Flag = 2
+                self.Visiter[1] = False
                 # データの表示
                 # print(self.result_data)
 
@@ -436,6 +449,8 @@ class Application(tk.Frame):
                 font = 20
                 space = 10
                 header_space = 50
+                if not self.Visiter[2]:
+                    self.Visiter[2] = 1
                 # Textboxを隠す
                 if self.entry1.winfo_exists():
                     self.entry1.pack_forget()
@@ -448,93 +463,95 @@ class Application(tk.Frame):
                     if checkedList[1] == [1, 1, 1, 1, 1] and self.wCam//50 <= lmlist[0][8][1] < self.wCam//50*10 and self.hCam//50 <= lmlist[0][8][2] < self.hCam//50*5:
                         # 戻るボタン
                         self.Result_Button_pressed[0] = True
-                        (self.wCam//100, self.hCam//100*12), (self.wCam//100*98, self.hCam//100*12+header_space+(font+space)*(books))
+                    elif checkedList[1] == [1, 1, 1, 1, 1] and self.wCam//100 <= lmlist[0][8][1] < self.wCam//100*98 and self.hCam//100*12 + header_space <= lmlist[0][8][2] < self.hCam//100*12 + header_space + (font+space) * (books+1):
+                        self.Result_Button_pressed[1] = True
+                        for i in range(books):
+                            if hand == 2:
+                                if self.Result_Button_pressed[1] and self.wCam//100 <= lmlist[0][8][1] < self.wCam//100*98 and self.hCam//100 * 12 + header_space + (font+space)*i <= lmlist[0][8][2] < self.hCam//100*12+header_space+(font+space)*(i+1):
+                                    self.Num_books = i+self.Dict_num*books
                     elif checkedList[1] == [1, 1, 1, 1, 1] and self.wCam//100*55 <= lmlist[0][8][1] < self.wCam//100*85 and self.hCam//100*90 <= lmlist[0][8][2] < self.hCam//100*98:
                         # ページ戻り
                         self.Result_Button_pressed[2] = True
                     elif checkedList[1] == [1, 1, 1, 1, 1] and self.wCam//100*30 <= lmlist[0][8][1] < self.wCam//100*45 and self.hCam//100*90 <= lmlist[0][8][2] < self.hCam//100*98:
                         # ページ進み
                         self.Result_Button_pressed[3] = True
-                    else:
-                        # ボタンがおされているかチェック
-                        if self.Result_Button_pressed[0]:
-                            self.EVENT_Flag = 0
-                        elif self.Result_Button_pressed[1]:
-                            # 詳細画面
-                            # 押した位置を記録
-                            self.EVENT_Flag = 3
-                            print(self.Books_num)
-                        elif self.Result_Button_pressed[2]:
-                            # ページ戻り
-                            self.Dict_num = max(0, self.Dict_num-1)
-                        elif self.Result_Button_pressed[3]:
-                            # ページ進み
-                            self.Dict_num = min(self.Dict_num+1, len(self.result_data))
-                        # 初期化
-                        self.Result_Button_pressed = [False]*5
-                        # frick_x1, frick_y1 = lmlist[0][8][1], lmlist[0][8][2]
+                    # ボタンがおされているかチェック
+                    if self.Result_Button_pressed[0]:
+                        self.EVENT_Flag = 0
+                        self.savedIMG_Result = []
+                        self.Visiter[2] = False
+                    elif self.Result_Button_pressed[1]:
+                        # 詳細画面
+                        # 押した位置を記録
+                        self.EVENT_Flag = 3
+                        self.sevedIMG = []
+                        self.Visiter[2] = False
+                    elif self.Result_Button_pressed[2]:
+                        # ページ戻り
+                        self.Dict_num = max(0, self.Dict_num-1)
+                    elif self.Result_Button_pressed[3]:
+                        # ページ進み
+                        self.Dict_num = min(self.Dict_num+1, len(self.result_data))
+                    # 初期化
+                    self.Result_Button_pressed = [False]*5
+                    # frick_x1, frick_y1 = lmlist[0][8][1], lmlist[0][8][2]
                 # UIの設定
                 # 検索結果がなかった(-1が帰ってくる)とき
-                if self.result_data == -1:
-                    cv2_putText_5(img2, "キーワードと一致する結果がございません\nキーワードを変えてお試しください", (self.wCam//2, self.hCam//2), self.font_Path, 30, (50, 50, 50))
-                else:
-                    # 検索結果を表示
-                    # print("表示")
-                    # 検索結果Text
-                    cv2_putText_6(img2, "「{}」の検索結果 {}件".format(self.search_text, len(self.result_data)), (self.wCam//50*12, self.hCam//50), self.font_Path, 40, (30, 30, 30))
-                    # 検索結果UI
-                    # 本の情報を表示する
-                    # font:30?
-                    # TODO:
-                    cv2.rectangle(img2, (self.wCam//100, self.hCam//100*12), (self.wCam//100*98, self.hCam//100*12+header_space+(font+space)*(books)), (150, 150, 150), 2)
-                    cv2_putText_6(img2, "{:3}|{:20}|{:10}".format("No", "タイトル", "著者"), (self.wCam//100+3, self.hCam//100*12 + header_space-font-space), self.font_Path, font, (100, 100, 100))
-                    for i in range(books):
-                        # print("{0}|{1}…|{2}…".format(i+1, self.result_data[i][1][:20], self.result_data[i][6][:15]))
-                        id = self.Dict_num*books+i
-                        # データ範囲外は表示しない
-                        if id >= len(self.result_data):
-                            break
-                        if len(self.result_data[i][1]) > 20:
-                            cv2_putText_6(img2, "{:3}|{:20}…|{:10}".format(id+1, self.result_data[id][1], self.result_data[id][6]),
-                                          (self.wCam//100+3, self.hCam//100*12 + header_space+(font+space)*i), self.font_Path, font, (50, 50, 50))
-                        else:
-                            cv2_putText_6(img2, "{:3}|{:20}|{:10}".format(id+1, self.result_data[id][1], self.result_data[id][6]),
-                                          (self.wCam//100+3, self.hCam//100*12 + header_space+(font+space)*i), self.font_Path, font, (50, 50, 50))
-                        if hand == 2:
-                            print(i,self.hCam//100 * 12 + header_space + (font+space)*i , lmlist[0][8][2] , self.hCam//100*12+header_space+(font+space)*(i+1))
-                            if checkedList[1] == [1, 1, 1, 1, 1] and self.wCam//100 <= lmlist[0][8][1] < self.wCam//100*98 and self.hCam//100*12 + header_space + (font*space)*i <= lmlist[0][8][2] < self.hCam//100*12+header_space+(font+space)*(i+1):
-                                # 詳細画面に移行
-                                print("a")
-                                self.Result_Button_pressed[1] = True
-                                self.Books_num = id
+                # 画面更新がない場合は以前の画像を使う
+                if not self.Visiter or self.Result_Button_pressed[2] or self.Result_Button_pressed[3]:
+                    if self.result_data == -1:
+                        cv2_putText_5(img2, "キーワードと一致する結果がございません\nキーワードを変えてお試しください", (self.wCam//2, self.hCam//2), self.font_Path, 30, (50, 50, 50))
+                    else:
+                        # 検索結果を表示
+                        # print("表示")
+                        # 検索結果Text
+                        cv2_putText_6(img2, "「{}」の検索結果 {}件".format(self.search_text, len(self.result_data)), (self.wCam//50*12, self.hCam//50), self.font_Path, 40, (30, 30, 30))
+                        # 検索結果UI
+                        # 本の情報を表示する
+                        # font:30?
+                        cv2.rectangle(img2, (self.wCam//100, self.hCam//100*12), (self.wCam//100*98, self.hCam//100*12+header_space+(font+space)*(books)), (150, 150, 150), 2)
+                        cv2_putText_6(img2, "{:3}|{:20}|{:10}".format("No", "タイトル", "著者"), (self.wCam//100+3, self.hCam//100*12 + header_space-font-space), self.font_Path, font, (100, 100, 100))
+                        for i in range(books):
+                            # print("{0}|{1}…|{2}…".format(i+1, self.result_data[i][1][:20], self.result_data[i][6][:15]))
+                            id = self.Dict_num*books+i
+                            # データ範囲外は表示しない
+                            if id >= len(self.result_data):
+                                break
+                            if len(self.result_data[i][1]) > 20:
+                                cv2_putText_6(img2, "{:3}|{:20}…|{:10}".format(id+1, self.result_data[id][1], self.result_data[id][6]),
+                                              (self.wCam//100+3, self.hCam//100*12 + header_space+(font+space)*i), self.font_Path, font, (50, 50, 50))
+                            else:
+                                cv2_putText_6(img2, "{:3}|{:20}|{:10}".format(id+1, self.result_data[id][1], self.result_data[id][6]),
+                                              (self.wCam//100+3, self.hCam//100*12 + header_space+(font+space)*i), self.font_Path, font, (50, 50, 50))
 
+                            # 線
+                            cv2.line(img2, (self.wCam//100, self.hCam//100*12 + header_space + (font+space)*i-space//2),
+                                     (self.wCam//100*98, self.hCam//100*12 + header_space + (font+space)*i-space//2), (100, 100, 100), 1)
                         # 線
-                        cv2.line(img2, (self.wCam//100, self.hCam//100*12 + header_space + (font+space)*i-space//2),
-                                 (self.wCam//100*98, self.hCam//100*12 + header_space + (font+space)*i-space//2), (100, 100, 100), 1)
-                    
-                    if self.Result_Button_pressed[1]:
-                        self.EVENT_Flag=3
-                        print(self.Books_num)
-                    
-                    # 線
-                    # cv2.line(img2, (self.wCam//100, self.hCam+header_space), (self.wCam//100*98, self.hCam+header_space), (100, 100, 100), 3)
-                    cv2.line(img2, (self.wCam//100, self.hCam//100*12+header_space+(font+space)*books), (self.wCam//100*98, self.hCam//100*12+header_space+(font+space)*books), (100, 100, 100), 2)
-                    # ページ戻りボタン
-                    cv2.rectangle(img2, (self.wCam//100*30, self.hCam//100*85), (self.wCam//100*45, self.hCam//100*98), (175, 40, 40), 2)
-                    cv2_putText_5(img2, "<<", (int(self.wCam/100*(30+45)/2), int(self.hCam/100*(85+98)/2)), self.font_Path, 50, (175, 40, 40))
-                    # ページ進みボタン
-                    cv2.rectangle(img2, (self.wCam//100*55, self.hCam//100*85), (self.wCam//100*70, self.hCam//100*98), (175, 40, 40), 2)
-                    cv2_putText_5(img2, ">>", (int(self.wCam/100*(55+70)/2), int(self.hCam//100*(85+98)/2)), self.font_Path, 50, (175, 40, 40))
-                # 戻るボタン
-                cv2_putText_5(img2, "戻る", (int(self.wCam//50*11/2), int(self.hCam//50*3)), self.font_Path, 20, (127, 127, 127))
-                cv2.rectangle(img2, (self.wCam//50, self.hCam//50), (self.wCam//50*10, self.hCam//50*5), (125, 125, 125), 1)
+                        # cv2.line(img2, (self.wCam//100, self.hCam+header_space), (self.wCam//100*98, self.hCam+header_space), (100, 100, 100), 3)
+                        cv2.line(img2, (self.wCam//100, self.hCam//100*12+header_space+(font+space)*books), (self.wCam//100*98, self.hCam//100*12+header_space+(font+space)*books), (100, 100, 100), 2)
+                        # ページ戻りボタン
+                        cv2.rectangle(img2, (self.wCam//100*30, self.hCam//100*85), (self.wCam//100*45, self.hCam//100*98), (175, 40, 40), 2)
+                        cv2_putText_5(img2, "<<", (int(self.wCam/100*(30+45)/2), int(self.hCam/100*(85+98)/2)), self.font_Path, 50, (175, 40, 40))
+                        # ページ進みボタン
+                        cv2.rectangle(img2, (self.wCam//100*55, self.hCam//100*85), (self.wCam//100*70, self.hCam//100*98), (175, 40, 40), 2)
+                        cv2_putText_5(img2, ">>", (int(self.wCam/100*(55+70)/2), int(self.hCam//100*(85+98)/2)), self.font_Path, 50, (175, 40, 40))
+                    # 戻るボタン
+                    cv2_putText_5(img2, "戻る", (int(self.wCam//50*11/2), int(self.hCam//50*3)), self.font_Path, 20, (127, 127, 127))
+                    cv2.rectangle(img2, (self.wCam//50, self.hCam//50), (self.wCam//50*10, self.hCam//50*5), (125, 125, 125), 1)
+                    # 画像を保存
+                #     self.savedIMG_Result = img2.copy()
+
+                # img2 = self.savedIMG_Result.copy()
+                # print("{}|{}".format(id(img2),id(self.savedIMG_Result)))
+                # 画像にポインタを追加する
                 # ポインタ
                 for i in range(hand):
-                    if lmlist[i][0][4]:
-                        cv2.circle(img, (lmlist[i][0][1], lmlist[i][0][2]), 3, (0, 0, 255), cv2.FILLED)
-                    else:
-                        cv2.circle(img, (lmlist[i][0][1], lmlist[i][0][2]), 3, (0, 255, 0), cv2.FILLED)
-                    cv2.circle(img, (int(lmlist[0][8][1]), int(lmlist[0][8][2])), 3, (0, 0, 255), cv2.FILLED)
+                    # if lmlist[i][0][4]:
+                    #     cv2.circle(img, (lmlist[i][0][1], lmlist[i][0][2]), 3, (0, 0, 255), cv2.FILLED)
+                    # else:
+                    #     cv2.circle(img, (lmlist[i][0][1], lmlist[i][0][2]), 3, (0, 255, 0), cv2.FILLED)
+                    # cv2.circle(img, (int(lmlist[0][8][1]), int(lmlist[0][8][2])), 3, (0, 0, 255), cv2.FILLED)
                     cv2.circle(img2, (int(lmlist[0][8][1]), int(lmlist[0][8][2])), 4, (0, 0, 0), cv2.FILLED)
                 if hand == 2:
                     if checkedList[1] == [1, 1, 1, 1, 1]:
@@ -544,6 +561,8 @@ class Application(tk.Frame):
 
             # 詳細画面表示
             elif self.EVENT_Flag == 3:
+                if not self.Visiter[3]:
+                    self.Visiter[3] = True
                 if hand == 2:
                     # (self.wCam//50, self.hCam//50), (self.wCam//50*10, self.hCam//50*5)
                     if checkedList[1] == [1, 1, 1, 1, 1] and self.wCam//50 <= lmlist[0][8][1] < self.wCam//50*10 and self.hCam//50 <= lmlist[0][8][2] < self.hCam//50*5:
@@ -551,27 +570,32 @@ class Application(tk.Frame):
                         self.Detail_Button_pressed[0] = True
                     else:
                         if self.Detail_Button_pressed[0]:
-                            self.EVENT_Flag = 0
+                            self.EVENT_Flag = 2
+                            self.Visiter[3] = False
+                        self.Detail_Button_pressed[0] = False
                 Data_Num = self.Books_num
                 # 1タイトル 2タイトル（ふりがな） 6著者 7出版社 10出版年(W3CDTF) 11ISBN
                 # 19公開範囲 0URL(クリックでサイトに飛べても可)
                 font = 20
-                Title_font = 40
-                space = 5
-                cv2.rectangle(img2, (self.wCam//100, self.hCam//100*12), (self.wCam//100*98, self.hCam//100*98), (150, 150, 150), 2)
-                cv2_putText_6(img2, "{:20}".format(self.result_data[Data_Num][1]), (self.wCam//100, self.hCam//100*12), self.font_Path_Bold, Title_font, (100, 100, 100))
-                cv2_putText_6(img2, "{:20}".format(self.result_data[Data_Num][2]), (self.wCam//100, self.hCam//100*12+Title_font+space), self.font_Path_Bold, font, (100, 100, 100))
-                cv2_putText_6(img2, "著者    :{:20}".format(self.result_data[Data_Num][6]), (self.wCam//100, self.hCam//100*12+Title_font+font+space), self.font_Path, font, (100, 100, 100))
-                cv2_putText_6(img2, "出版社  :{:20}".format(self.result_data[Data_Num][7]), (self.wCam//100, self.hCam//100*12+Title_font+(font+space)*2), self.font_Path, font, (100, 100, 100))
-                cv2_putText_6(img2, "出版年  :{:20}".format(self.result_data[Data_Num][10]), (self.wCam//100, self.hCam//100*12+Title_font+(font+space)*3), self.font_Path, font, (100, 100, 100))
-                cv2_putText_6(img2, "ISBN   :{:20}".format(self.result_data[Data_Num][11]), (self.wCam//100, self.hCam//100*12+Title_font+(font+space)*4), self.font_Path, font, (100, 100, 100))
-                cv2_putText_6(img2, "公開範囲:{:20}".format(self.result_data[Data_Num][18]), (self.wCam//100, self.hCam//100*12+Title_font+(font+space)+5), self.font_Path, font, (100, 100, 100))
-                cv2_putText_6(img2, "URL    :{:40}\n        {:40}".format(self.result_data[Data_Num][0], self.result_data[Data_Num][0][20:]),
-                              (self.wCam//100, self.hCam//100*12+Title_font+font*6), self.font_Path, font, (100, 100, 100))
-                # 戻るボタン
-                cv2_putText_5(img2, "戻る", (int(self.wCam//50*11/2), int(self.hCam//50*3)), self.font_Path, 20, (127, 127, 127))
-                cv2.rectangle(img2, (self.wCam//50, self.hCam//50), (self.wCam//50*10, self.hCam//50*5), (125, 125, 125), 1)
-                #ポインタ
+                Title_font = 30
+                space = 15
+                if not self.Visiter[3]:
+                    cv2.rectangle(img2, (self.wCam//100, self.hCam//100*12), (self.wCam//100*98, self.hCam//100*98), (150, 150, 150), 2)
+                    cv2_putText_6(img2, "{:14}".format(self.result_data[Data_Num][1]), (self.wCam//100, self.hCam//100*12), self.font_Path_Bold, Title_font, (100, 100, 100))
+                    cv2_putText_6(img2, "{:20}".format(self.result_data[Data_Num][2]), (self.wCam//100, self.hCam//100*12+Title_font+space), self.font_Path_Bold, font, (100, 100, 100))
+                    cv2_putText_6(img2, "著者    :{:20}".format(self.result_data[Data_Num][6]), (self.wCam//100, self.hCam//100*12+Title_font+font+space), self.font_Path, font, (100, 100, 100))
+                    cv2_putText_6(img2, "出版社  :{:20}".format(self.result_data[Data_Num][7]), (self.wCam//100, self.hCam//100*12+Title_font+(font+space)*2), self.font_Path, font, (100, 100, 100))
+                    cv2_putText_6(img2, "出版年  :{:20}".format(self.result_data[Data_Num][10]), (self.wCam//100, self.hCam//100*12+Title_font+(font+space)*3), self.font_Path, font, (100, 100, 100))
+                    cv2_putText_6(img2, "ISBN   :{:20}".format(self.result_data[Data_Num][11]), (self.wCam//100, self.hCam//100*12+Title_font+(font+space)*4), self.font_Path, font, (100, 100, 100))
+                    cv2_putText_6(img2, "公開範囲:{:20}".format(self.result_data[Data_Num][18]), (self.wCam//100, self.hCam//100*12+Title_font+(font+space)*5), self.font_Path, font, (100, 100, 100))
+                    cv2_putText_6(img2, "URL    :{:40}\n        {:40}".format(self.result_data[Data_Num][0], self.result_data[Data_Num][0][20:]),
+                                  (self.wCam//100, self.hCam//100*12+Title_font+(font+space)*6), self.font_Path, font, (100, 100, 100))
+                    # 戻るボタン
+                    cv2_putText_5(img2, "戻る", (int(self.wCam//50*11/2), int(self.hCam//50*3)), self.font_Path, 20, (127, 127, 127))
+                    cv2.rectangle(img2, (self.wCam//50, self.hCam//50), (self.wCam//50*10, self.hCam//50*5), (125, 125, 125), 1)
+                    self.savedIMG_Detali = img2.copy()
+                img2 = self.savedIMG_Detail.copy()
+                # ポインタ
                 for i in range(hand):
                     if lmlist[i][0][4]:
                         cv2.circle(img, (lmlist[i][0][1], lmlist[i][0][2]), 3, (0, 0, 255), cv2.FILLED)

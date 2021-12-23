@@ -1,3 +1,4 @@
+import threading
 import numpy as np
 import cv2
 from PIL import Image, ImageDraw, ImageFont
@@ -123,3 +124,4 @@ def get_east_asian_width_count(text):
         else:
             count += 1
     return count
+

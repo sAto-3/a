@@ -1,11 +1,7 @@
-from os import access, execv
 import socket
 import threading
-from tkinter.constants import END
-from cv2 import RETR_LIST
 import pandas
 import pickle
-import sys
 
 
 def main_mortion(accept):
@@ -58,7 +54,7 @@ def main_mortion(accept):
             print(e)
     else:
         print("[ ] data was empty.")
-        accept.send(bytes("-1", encoding="utf-8"))
+        accept.send(bytes("0", encoding="utf-8"))
         accept.send(bytes("-1", encoding="utf-8"))
 
     print("[ ]:close client communication")
@@ -108,3 +104,4 @@ if __name__ == "__main__":
 
         except RuntimeError as e:
             print("[ ]thread:{}".format(e))
+        Client_Thread.join()
